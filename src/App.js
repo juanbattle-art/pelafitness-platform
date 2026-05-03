@@ -6,36 +6,46 @@ import Dashboard from './pages/Dashboard'
 import Admin from './pages/Admin'
 import Programa from './pages/Programa'
 
+const ADMIN_EMAIL = 'juanbattle@hotmail.com'
+
 export default function App() {
   const [session, setSession] = useState(null)
   const [perfil, setPerfil] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Obtener sesión actual
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      if (session) cargarPerfil(session.user.id)
+      if (session) cargarPerfil(session.user)
       else setLoading(false)
     })
 
-    // Escuchar cambios de sesión
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      if (session) cargarPerfil(session.user.id)
+      if (session) cargarPerfil(session.user)
       else { setPerfil(null); setLoading(false) }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  async function cargarPerfil(userId) {
+  async function cargarPerfil(user) {
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', user.id)
       .single()
-    setPerfil(data)
+
+    if (data) {
+      setPerfil(data)
+    } else {
+      setPerfil({
+        id: user.id,
+        email: user.email,
+        nombre: user.email === ADMIN_EMAIL ? 'Juan' : 'Alumno',
+        rol: user.email === ADMIN_EMAIL ? 'admin' : 'alumno'
+      })
+    }
     setLoading(false)
   }
 
