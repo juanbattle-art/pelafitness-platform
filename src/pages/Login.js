@@ -33,19 +33,19 @@ export default function Login() {
         backgroundImage: `url(${FOTO})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
-        filter: 'brightness(0.55)'
+        filter: 'brightness(0.8)'
       }} />
 
       <div style={{
         position: 'absolute', inset: 0, zIndex: 1,
-        background: 'linear-gradient(135deg, rgba(10,10,10,0.75) 0%, rgba(10,10,10,0.45) 50%, rgba(10,10,10,0.7) 100%)'
+        background: 'linear-gradient(135deg, rgba(10,10,10,0.35) 0%, rgba(10,10,10,0.15) 50%, rgba(10,10,10,0.35) 100%)'
       }} />
 
       <div style={{
         position: 'relative', zIndex: 2,
         width: '100%', maxWidth: 440,
         padding: '48px 40px',
-        background: 'rgba(10,10,10,0.55)',
+        background: 'rgba(10,10,10,0.4)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         border: '1px solid rgba(255,255,255,0.08)',
