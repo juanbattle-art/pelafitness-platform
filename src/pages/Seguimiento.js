@@ -29,9 +29,20 @@ const s = {
   success: { color: '#4ade80', fontSize: 13, marginBottom: 16 },
   agua: { display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 },
   vaso: (lleno) => ({ width: 44, height: 44, borderRadius: 8, border: `2px solid ${lleno ? '#60a5fa' : '#222'}`, background: lleno ? 'rgba(96,165,250,0.2)' : 'transparent', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }),
+  progressBar: { width: '100%', height: 10, background: '#0a0a0a', borderRadius: 6, overflow: 'hidden', marginTop: 8, border: '1px solid #1a1a1a' },
+  progressFill: (pct, color) => ({ width: `${Math.min(pct, 100)}%`, height: '100%', background: color, transition: 'width 0.3s ease', borderRadius: 6 }),
+  progressLabel: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 12, color: '#888', marginBottom: 4 },
+  progressValue: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1 },
+  preview: { background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 8, padding: '12px 16px', marginTop: 8, marginBottom: 8 },
+  previewTitle: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#f5e642', marginBottom: 8 },
+  previewGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 },
+  previewItem: { textAlign: 'center' },
+  previewVal: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: '#f0f0f0', letterSpacing: 1 },
+  previewLab: { fontSize: 10, color: '#555', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 },
 }
 
 const MOMENTOS = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena', 'Snack']
+const METAS_DEFAULT = { calorias: 2000, proteinas: 150, carbohidratos: 200, grasas: 65 }
 
 export default function Seguimiento({ perfil }) {
   const navigate = useNavigate()
@@ -48,8 +59,11 @@ export default function Seguimiento({ perfil }) {
   const [resultados, setResultados] = useState([])
   const [nuevaComida, setNuevaComida] = useState({ nombre: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', gramos: '100', momento: 'Desayuno' })
   const [modoManual, setModoManual] = useState(false)
+  const [alimentoBase, setAlimentoBase] = useState(null)
   const [ejercicios, setEjercicios] = useState([])
   const [nuevoEj, setNuevoEj] = useState({ ejercicio: '', series: '', repeticiones: '', peso_kg: '', notas: '' })
+  const [metas, setMetas] = useState(METAS_DEFAULT)
+  const [metasInput, setMetasInput] = useState(METAS_DEFAULT)
 
   useEffect(() => { cargarTodo() }, [fecha])
 
@@ -65,6 +79,17 @@ export default function Seguimiento({ perfil }) {
     setEjercicios(e || [])
     const { data: al } = await supabase.from('alimentos').select('*').order('nombre').limit(200)
     setAlimentos(al || [])
+    const { data: m } = await supabase.from('metas_nutricionales').select('*').eq('alumno_id', id).maybeSingle()
+    if (m) {
+      const cargadas = {
+        calorias: parseFloat(m.calorias) || METAS_DEFAULT.calorias,
+        proteinas: parseFloat(m.proteinas) || METAS_DEFAULT.proteinas,
+        carbohidratos: parseFloat(m.carbohidratos) || METAS_DEFAULT.carbohidratos,
+        grasas: parseFloat(m.grasas) || METAS_DEFAULT.grasas
+      }
+      setMetas(cargadas)
+      setMetasInput(cargadas)
+    }
   }
 
   async function guardarPeso() {
@@ -100,9 +125,56 @@ export default function Seguimiento({ perfil }) {
   }
 
   function seleccionarAlimento(al) {
-    setNuevaComida({ ...nuevaComida, nombre: al.nombre, calorias: al.calorias, proteinas: al.proteinas, carbohidratos: al.carbohidratos, grasas: al.grasas, gramos: al.porcion_gramos })
+    const porcion = parseFloat(al.porcion_gramos) || 100
+    setAlimentoBase({
+      nombre: al.nombre,
+      cal_por_g: parseFloat(al.calorias) / porcion,
+      prot_por_g: parseFloat(al.proteinas) / porcion,
+      carb_por_g: parseFloat(al.carbohidratos) / porcion,
+      gras_por_g: parseFloat(al.grasas) / porcion
+    })
+    setNuevaComida({
+      ...nuevaComida,
+      nombre: al.nombre,
+      calorias: al.calorias,
+      proteinas: al.proteinas,
+      carbohidratos: al.carbohidratos,
+      grasas: al.grasas,
+      gramos: porcion
+    })
     setBusqueda(al.nombre)
     setResultados([])
+    setModoManual(false)
+  }
+
+  function actualizarGramos(g) {
+    if (alimentoBase && g !== '') {
+      const gramos = parseFloat(g) || 0
+      setNuevaComida({
+        ...nuevaComida,
+        gramos: g,
+        calorias: (alimentoBase.cal_por_g * gramos).toFixed(1),
+        proteinas: (alimentoBase.prot_por_g * gramos).toFixed(1),
+        carbohidratos: (alimentoBase.carb_por_g * gramos).toFixed(1),
+        grasas: (alimentoBase.gras_por_g * gramos).toFixed(1)
+      })
+    } else {
+      setNuevaComida({ ...nuevaComida, gramos: g })
+    }
+  }
+
+  function activarManual() {
+    setModoManual(true)
+    setAlimentoBase(null)
+    setBusqueda('')
+    setResultados([])
+    setNuevaComida({ nombre: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', gramos: '100', momento: nuevaComida.momento })
+  }
+
+  function limpiarFormComida() {
+    setNuevaComida({ nombre: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', gramos: '100', momento: 'Desayuno' })
+    setBusqueda('')
+    setAlimentoBase(null)
     setModoManual(false)
   }
 
@@ -118,8 +190,7 @@ export default function Seguimiento({ perfil }) {
       gramos: parseFloat(nuevaComida.gramos) || 100,
       momento: nuevaComida.momento
     })
-    setNuevaComida({ nombre: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', gramos: '100', momento: 'Desayuno' })
-    setBusqueda('')
+    limpiarFormComida()
     setMsg('Comida agregada ✓')
     cargarTodo()
     setTimeout(() => setMsg(''), 2000)
@@ -144,11 +215,57 @@ export default function Seguimiento({ perfil }) {
     cargarTodo()
   }
 
-  const totalCal = comidas.reduce((s, c) => s + (c.calorias || 0), 0)
-  const totalProt = comidas.reduce((s, c) => s + (c.proteinas || 0), 0)
-  const totalCarb = comidas.reduce((s, c) => s + (c.carbohidratos || 0), 0)
-  const totalGras = comidas.reduce((s, c) => s + (c.grasas || 0), 0)
+  async function guardarMetas() {
+    const m = {
+      alumno_id: perfil.id,
+      calorias: parseFloat(metasInput.calorias) || METAS_DEFAULT.calorias,
+      proteinas: parseFloat(metasInput.proteinas) || METAS_DEFAULT.proteinas,
+      carbohidratos: parseFloat(metasInput.carbohidratos) || METAS_DEFAULT.carbohidratos,
+      grasas: parseFloat(metasInput.grasas) || METAS_DEFAULT.grasas,
+      updated_at: new Date().toISOString()
+    }
+    const { error } = await supabase.from('metas_nutricionales').upsert(m, { onConflict: 'alumno_id' })
+    if (error) {
+      setMsg('Error al guardar metas')
+    } else {
+      setMetas({ calorias: m.calorias, proteinas: m.proteinas, carbohidratos: m.carbohidratos, grasas: m.grasas })
+      setMsg('Metas guardadas ✓')
+    }
+    setTimeout(() => setMsg(''), 2000)
+  }
+
+  const totalCal = comidas.reduce((s, c) => s + (parseFloat(c.calorias) || 0), 0)
+  const totalProt = comidas.reduce((s, c) => s + (parseFloat(c.proteinas) || 0), 0)
+  const totalCarb = comidas.reduce((s, c) => s + (parseFloat(c.carbohidratos) || 0), 0)
+  const totalGras = comidas.reduce((s, c) => s + (parseFloat(c.grasas) || 0), 0)
   const ultimoPeso = registrosPeso[0]?.peso
+
+  const pct = (actual, meta) => meta > 0 ? (actual / meta) * 100 : 0
+  const restante = (actual, meta) => Math.max(0, meta - actual)
+
+  const BarraProgreso = ({ label, actual, meta, unidad, color }) => {
+    const porcentaje = pct(actual, meta)
+    const falta = restante(actual, meta)
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <div style={s.progressLabel}>
+          <span style={{ fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', fontSize: 11, color: '#888' }}>{label}</span>
+          <span>
+            <span style={{ ...s.progressValue, color }}>{Math.round(actual)}</span>
+            <span style={{ color: '#444', fontSize: 13 }}> / {meta}{unidad}</span>
+          </span>
+        </div>
+        <div style={s.progressBar}>
+          <div style={s.progressFill(porcentaje, color)} />
+        </div>
+        <div style={{ fontSize: 11, color: porcentaje >= 100 ? '#4ade80' : '#555', marginTop: 4 }}>
+          {porcentaje >= 100
+            ? `✓ Meta alcanzada (+${Math.round(actual - meta)}${unidad})`
+            : `Faltan ${Math.round(falta)}${unidad} (${Math.round(porcentaje)}%)`}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={s.page}>
@@ -163,9 +280,9 @@ export default function Seguimiento({ perfil }) {
         {msg && <div style={s.success}>{msg}</div>}
 
         <div style={s.tabs}>
-          {['resumen', 'peso', 'agua', 'comidas', 'entrenamiento'].map(t => (
+          {['resumen', 'peso', 'agua', 'comidas', 'entrenamiento', 'metas'].map(t => (
             <button key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>
-              {{ resumen: '📊 Resumen', peso: '⚖️ Peso', agua: '💧 Agua', comidas: '🍎 Comidas', entrenamiento: '🏋️ Entrenamiento' }[t]}
+              {{ resumen: '📊 Resumen', peso: '⚖️ Peso', agua: '💧 Agua', comidas: '🍎 Comidas', entrenamiento: '🏋️ Entrenamiento', metas: '🎯 Metas' }[t]}
             </button>
           ))}
         </div>
@@ -178,10 +295,20 @@ export default function Seguimiento({ perfil }) {
               <div style={s.stat}><div style={s.statNum}>{vasosHoy}/{META_AGUA}</div><div style={s.statLabel}>Vasos de agua</div></div>
               <div style={s.stat}><div style={s.statNum}>{ejercicios.length}</div><div style={s.statLabel}>Ejercicios hoy</div></div>
             </div>
+
+            <div style={s.card}>
+              <div style={s.cardTitle}>Progreso del día vs metas</div>
+              <BarraProgreso label="Calorías" actual={totalCal} meta={metas.calorias} unidad=" kcal" color="#f5e642" />
+              <BarraProgreso label="Proteínas" actual={totalProt} meta={metas.proteinas} unidad="g" color="#4ade80" />
+              <BarraProgreso label="Carbohidratos" actual={totalCarb} meta={metas.carbohidratos} unidad="g" color="#60a5fa" />
+              <BarraProgreso label="Grasas" actual={totalGras} meta={metas.grasas} unidad="g" color="#f97316" />
+              <button style={{ ...s.btnSm, marginTop: 8 }} onClick={() => setTab('metas')}>Ajustar metas →</button>
+            </div>
+
             <div style={s.card}>
               <div style={s.cardTitle}>Macros del día</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                {[['Proteínas', Math.round(totalProt) + 'g', '#4ade80'], ['Carbohidratos', Math.round(totalCarb) + 'g', '#f5e642'], ['Grasas', Math.round(totalGras) + 'g', '#f97316']].map(([label, val, color]) => (
+                {[['Proteínas', Math.round(totalProt) + 'g', '#4ade80'], ['Carbohidratos', Math.round(totalCarb) + 'g', '#60a5fa'], ['Grasas', Math.round(totalGras) + 'g', '#f97316']].map(([label, val, color]) => (
                   <div key={label} style={{ textAlign: 'center', background: '#0d0d0d', borderRadius: 8, padding: '12px' }}>
                     <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color, letterSpacing: 1 }}>{val}</div>
                     <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>{label}</div>
@@ -255,11 +382,39 @@ export default function Seguimiento({ perfil }) {
                     </div>
                   )}
                 </div>
-                <div>
-                  <button style={s.btnSm} onClick={() => setModoManual(!modoManual)}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button style={s.btnSm} onClick={() => modoManual ? limpiarFormComida() : activarManual()}>
                     {modoManual ? 'Usar búsqueda' : '+ Agregar manualmente'}
                   </button>
+                  {(nuevaComida.nombre || modoManual) && (
+                    <button style={s.btnSm} onClick={limpiarFormComida}>Limpiar</button>
+                  )}
                 </div>
+
+                {alimentoBase && nuevaComida.gramos && (
+                  <div style={s.preview}>
+                    <div style={s.previewTitle}>📐 Cálculo automático para {nuevaComida.gramos}g</div>
+                    <div style={s.previewGrid}>
+                      <div style={s.previewItem}>
+                        <div style={{ ...s.previewVal, color: '#f5e642' }}>{nuevaComida.calorias}</div>
+                        <div style={s.previewLab}>kcal</div>
+                      </div>
+                      <div style={s.previewItem}>
+                        <div style={{ ...s.previewVal, color: '#4ade80' }}>{nuevaComida.proteinas}g</div>
+                        <div style={s.previewLab}>Proteínas</div>
+                      </div>
+                      <div style={s.previewItem}>
+                        <div style={{ ...s.previewVal, color: '#60a5fa' }}>{nuevaComida.carbohidratos}g</div>
+                        <div style={s.previewLab}>Carbos</div>
+                      </div>
+                      <div style={s.previewItem}>
+                        <div style={{ ...s.previewVal, color: '#f97316' }}>{nuevaComida.grasas}g</div>
+                        <div style={s.previewLab}>Grasas</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {(modoManual || nuevaComida.nombre) && (
                   <>
                     {modoManual && (
@@ -269,16 +424,32 @@ export default function Seguimiento({ perfil }) {
                       </div>
                     )}
                     <div style={s.row}>
-                      <div><label style={s.label}>Calorías</label><input style={s.input} type="number" value={nuevaComida.calorias} onChange={e => setNuevaComida({ ...nuevaComida, calorias: e.target.value })} placeholder="kcal" /></div>
-                      <div><label style={s.label}>Gramos</label><input style={s.input} type="number" value={nuevaComida.gramos} onChange={e => setNuevaComida({ ...nuevaComida, gramos: e.target.value })} placeholder="g" /></div>
+                      <div>
+                        <label style={s.label}>Gramos {alimentoBase && <span style={{ color: '#f5e642', textTransform: 'none' }}>(auto-calcula)</span>}</label>
+                        <input style={s.input} type="number" value={nuevaComida.gramos} onChange={e => actualizarGramos(e.target.value)} placeholder="g" />
+                      </div>
+                      <div>
+                        <label style={s.label}>Calorías</label>
+                        <input style={s.input} type="number" value={nuevaComida.calorias} onChange={e => setNuevaComida({ ...nuevaComida, calorias: e.target.value })} placeholder="kcal" disabled={!!alimentoBase} />
+                      </div>
                     </div>
                     <div style={s.row}>
-                      <div><label style={s.label}>Proteínas (g)</label><input style={s.input} type="number" value={nuevaComida.proteinas} onChange={e => setNuevaComida({ ...nuevaComida, proteinas: e.target.value })} placeholder="g" /></div>
-                      <div><label style={s.label}>Carbohidratos (g)</label><input style={s.input} type="number" value={nuevaComida.carbohidratos} onChange={e => setNuevaComida({ ...nuevaComida, carbohidratos: e.target.value })} placeholder="g" /></div>
+                      <div>
+                        <label style={s.label}>Proteínas (g)</label>
+                        <input style={s.input} type="number" value={nuevaComida.proteinas} onChange={e => setNuevaComida({ ...nuevaComida, proteinas: e.target.value })} placeholder="g" disabled={!!alimentoBase} />
+                      </div>
+                      <div>
+                        <label style={s.label}>Carbohidratos (g)</label>
+                        <input style={s.input} type="number" value={nuevaComida.carbohidratos} onChange={e => setNuevaComida({ ...nuevaComida, carbohidratos: e.target.value })} placeholder="g" disabled={!!alimentoBase} />
+                      </div>
                     </div>
                     <div style={s.row}>
-                      <div><label style={s.label}>Grasas (g)</label><input style={s.input} type="number" value={nuevaComida.grasas} onChange={e => setNuevaComida({ ...nuevaComida, grasas: e.target.value })} placeholder="g" /></div>
-                      <div><label style={s.label}>Momento</label>
+                      <div>
+                        <label style={s.label}>Grasas (g)</label>
+                        <input style={s.input} type="number" value={nuevaComida.grasas} onChange={e => setNuevaComida({ ...nuevaComida, grasas: e.target.value })} placeholder="g" disabled={!!alimentoBase} />
+                      </div>
+                      <div>
+                        <label style={s.label}>Momento</label>
                         <select style={s.select} value={nuevaComida.momento} onChange={e => setNuevaComida({ ...nuevaComida, momento: e.target.value })}>
                           {MOMENTOS.map(m => <option key={m}>{m}</option>)}
                         </select>
@@ -301,8 +472,8 @@ export default function Seguimiento({ perfil }) {
                       {del.map(c => (
                         <div key={c.id} style={s.item}>
                           <div>
-                            <div style={s.itemText}>{c.nombre_manual}</div>
-                            <div style={s.itemSub}>{c.calorias} kcal · P: {c.proteinas}g · C: {c.carbohidratos}g · G: {c.grasas}g</div>
+                            <div style={s.itemText}>{c.nombre_manual} {c.gramos && <span style={{ color: '#555', fontSize: 12 }}>· {c.gramos}g</span>}</div>
+                            <div style={s.itemSub}>{Math.round(c.calorias)} kcal · P: {Math.round(c.proteinas)}g · C: {Math.round(c.carbohidratos)}g · G: {Math.round(c.grasas)}g</div>
                           </div>
                           <button style={s.btnDanger} onClick={() => eliminarComida(c.id)}>✕</button>
                         </div>
@@ -346,6 +517,60 @@ export default function Seguimiento({ perfil }) {
                     <button style={s.btnDanger} onClick={() => eliminarEjercicio(e.id)}>✕</button>
                   </div>
                 ))}
+            </div>
+          </div>
+        )}
+
+        {tab === 'metas' && (
+          <div>
+            <div style={s.card}>
+              <div style={s.cardTitle}>🎯 Mis metas diarias</div>
+              <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+                Configurá cuánto querés consumir por día. Las barras del Resumen te van a mostrar cuánto te falta.
+              </div>
+              <div style={s.grid}>
+                <div style={s.row}>
+                  <div>
+                    <label style={s.label}>Calorías (kcal)</label>
+                    <input style={s.input} type="number" value={metasInput.calorias} onChange={e => setMetasInput({ ...metasInput, calorias: e.target.value })} placeholder="2000" />
+                  </div>
+                  <div>
+                    <label style={s.label}>Proteínas (g)</label>
+                    <input style={s.input} type="number" value={metasInput.proteinas} onChange={e => setMetasInput({ ...metasInput, proteinas: e.target.value })} placeholder="150" />
+                  </div>
+                </div>
+                <div style={s.row}>
+                  <div>
+                    <label style={s.label}>Carbohidratos (g)</label>
+                    <input style={s.input} type="number" value={metasInput.carbohidratos} onChange={e => setMetasInput({ ...metasInput, carbohidratos: e.target.value })} placeholder="200" />
+                  </div>
+                  <div>
+                    <label style={s.label}>Grasas (g)</label>
+                    <input style={s.input} type="number" value={metasInput.grasas} onChange={e => setMetasInput({ ...metasInput, grasas: e.target.value })} placeholder="65" />
+                  </div>
+                </div>
+                <button style={s.btn} onClick={guardarMetas}>Guardar metas</button>
+              </div>
+            </div>
+
+            <div style={s.card}>
+              <div style={s.cardTitle}>💡 Guía rápida</div>
+              <div style={{ fontSize: 13, color: '#888', lineHeight: 1.7 }}>
+                <div style={{ marginBottom: 10 }}><strong style={{ color: '#f5e642' }}>Calorías:</strong> Para mantener peso, multiplicá tu peso (kg) × 30. Para bajar, restá 300-500. Para subir, sumá 300-500.</div>
+                <div style={{ marginBottom: 10 }}><strong style={{ color: '#4ade80' }}>Proteínas:</strong> 1.6 a 2.2g por kg de peso corporal si entrenás fuerza.</div>
+                <div style={{ marginBottom: 10 }}><strong style={{ color: '#60a5fa' }}>Carbohidratos:</strong> El resto de las calorías después de proteínas y grasas. Subí si entrenás mucho, bajá si querés definir.</div>
+                <div><strong style={{ color: '#f97316' }}>Grasas:</strong> 0.8 a 1g por kg de peso corporal mínimo, para hormonas saludables.</div>
+              </div>
+            </div>
+
+            <div style={s.card}>
+              <div style={s.cardTitle}>Metas actuales activas</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
+                <div style={s.stat}><div style={{ ...s.statNum, color: '#f5e642' }}>{metas.calorias}</div><div style={s.statLabel}>kcal/día</div></div>
+                <div style={s.stat}><div style={{ ...s.statNum, color: '#4ade80' }}>{metas.proteinas}g</div><div style={s.statLabel}>Proteínas</div></div>
+                <div style={s.stat}><div style={{ ...s.statNum, color: '#60a5fa' }}>{metas.carbohidratos}g</div><div style={s.statLabel}>Carbos</div></div>
+                <div style={s.stat}><div style={{ ...s.statNum, color: '#f97316' }}>{metas.grasas}g</div><div style={s.statLabel}>Grasas</div></div>
+              </div>
             </div>
           </div>
         )}
