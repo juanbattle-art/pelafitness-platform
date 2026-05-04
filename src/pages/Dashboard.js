@@ -15,11 +15,10 @@ const s = {
   nombre: { fontSize: 13, color: '#555' },
   logoutBtn: { background: 'none', border: '1px solid #222', color: '#555', borderRadius: 8, padding: '6px 14px', fontSize: 13 },
   main: { maxWidth: 900, margin: '0 auto', padding: '32px 24px' },
-  bienvenida: { marginBottom: 32 },
   titulo: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, letterSpacing: 1, color: '#f0f0f0', marginBottom: 4 },
   subtitulo: { fontSize: 14, color: '#555' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 },
-  card: { background: '#111', border: '1px solid #222', borderRadius: 14, padding: '24px', cursor: 'pointer', transition: 'all 0.2s', textDecoration: 'none', display: 'block' },
+  card: { background: '#111', border: '1px solid #222', borderRadius: 14, padding: '24px', cursor: 'pointer', transition: 'all 0.2s', display: 'block' },
   cardEmoji: { fontSize: 32, marginBottom: 12 },
   cardTipo: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
   cardTitulo: { fontSize: 18, fontWeight: 600, color: '#f0f0f0', marginBottom: 8, lineHeight: 1.3 },
@@ -60,9 +59,14 @@ export default function Dashboard({ perfil }) {
       </header>
 
       <main style={s.main}>
-        <div style={s.bienvenida}>
-          <div style={s.titulo}>Mis Programas</div>
-          <div style={s.subtitulo}>Tu contenido personalizado de Pelafitness</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={s.titulo}>Mis Programas</div>
+            <div style={s.subtitulo}>Tu contenido personalizado de Pelafitness</div>
+          </div>
+          <button onClick={() => navigate('/seguimiento')} style={{ background: '#f5e642', color: '#000', border: 'none', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+            📊 Mi Seguimiento
+          </button>
         </div>
 
         {loading ? (
