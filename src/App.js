@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Admin from './pages/Admin'
 import Programa from './pages/Programa'
+import Seguimiento from './pages/Seguimiento'
 
 const ADMIN_EMAIL = 'juanbattle@hotmail.com'
 
@@ -30,12 +31,7 @@ export default function App() {
   }, [])
 
   async function cargarPerfil(user) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     if (data) {
       setPerfil(data)
     } else {
@@ -51,9 +47,7 @@ export default function App() {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0a0a0a' }}>
-      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, letterSpacing: 2, color: '#f5e642' }}>
-        PELAFITNESS
-      </div>
+      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, letterSpacing: 2, color: '#f5e642' }}>PELAFITNESS</div>
     </div>
   )
 
@@ -64,6 +58,7 @@ export default function App() {
         <Route path="/" element={session ? (perfil?.rol === 'admin' ? <Navigate to="/admin" /> : <Dashboard perfil={perfil} />) : <Navigate to="/login" />} />
         <Route path="/admin" element={session && perfil?.rol === 'admin' ? <Admin perfil={perfil} /> : <Navigate to="/" />} />
         <Route path="/programa/:id" element={session ? <Programa perfil={perfil} /> : <Navigate to="/login" />} />
+        <Route path="/seguimiento" element={session ? <Seguimiento perfil={perfil} /> : <Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   )
