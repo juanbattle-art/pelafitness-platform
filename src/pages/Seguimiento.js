@@ -14,6 +14,7 @@ const s = {
   cardTitle: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 1, marginBottom: 16 },
   grid: { display: 'grid', gap: 12 },
   row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
+  row3: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 },
   label: { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#555', marginBottom: 7 },
   input: { width: '100%', background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, color: '#f0f0f0', fontFamily: 'inherit', fontSize: 14, padding: '10px 14px', outline: 'none', boxSizing: 'border-box' },
   select: { width: '100%', background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, color: '#f0f0f0', fontFamily: 'inherit', fontSize: 14, padding: '10px 14px', outline: 'none', appearance: 'none', boxSizing: 'border-box' },
@@ -24,25 +25,30 @@ const s = {
   itemText: { fontSize: 14, color: '#ccc' },
   itemSub: { fontSize: 12, color: '#444', marginTop: 2 },
   stat: { background: '#111', border: '1px solid #222', borderRadius: 12, padding: '16px 20px', textAlign: 'center' },
-  statNum: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: '#f5e642', letterSpacing: 1 },
-  statLabel: { fontSize: 12, color: '#555', marginTop: 4 },
-  success: { color: '#4ade80', fontSize: 13, marginBottom: 16 },
+  statNum: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: '#f5e642', letterSpacing: 1 },
+  statLabel: { fontSize: 11, color: '#555', marginTop: 4 },
+  success: { color: '#4ade80', fontSize: 13, marginBottom: 12 },
   agua: { display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 },
   vaso: (lleno) => ({ width: 44, height: 44, borderRadius: 8, border: `2px solid ${lleno ? '#60a5fa' : '#222'}`, background: lleno ? 'rgba(96,165,250,0.2)' : 'transparent', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }),
-  progressBar: { width: '100%', height: 10, background: '#0a0a0a', borderRadius: 6, overflow: 'hidden', marginTop: 8, border: '1px solid #1a1a1a' },
-  progressFill: (pct, color) => ({ width: `${Math.min(pct, 100)}%`, height: '100%', background: color, transition: 'width 0.3s ease', borderRadius: 6 }),
-  progressLabel: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 12, color: '#888', marginBottom: 4 },
-  progressValue: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1 },
-  preview: { background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 8, padding: '12px 16px', marginTop: 8, marginBottom: 8 },
-  previewTitle: { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#f5e642', marginBottom: 8 },
-  previewGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 },
-  previewItem: { textAlign: 'center' },
-  previewVal: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: '#f0f0f0', letterSpacing: 1 },
-  previewLab: { fontSize: 10, color: '#555', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 },
 }
 
 const MOMENTOS = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena', 'Snack']
-const METAS_DEFAULT = { calorias: 2000, proteinas: 150, carbohidratos: 200, grasas: 65 }
+
+function ProgressBar({ actual, meta, color }) {
+  const pct = meta > 0 ? Math.min((actual / meta) * 100, 100) : 0
+  const over = meta > 0 && actual > meta
+  return (
+    <div style={{ marginTop: 6 }}>
+      <div style={{ background: '#1a1a1a', borderRadius: 6, height: 8, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: over ? '#ff4d4d' : color, borderRadius: 6, transition: 'width 0.3s' }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+        <span style={{ fontSize: 11, color: over ? '#ff4d4d' : '#666' }}>{Math.round(actual)}</span>
+        <span style={{ fontSize: 11, color: '#444' }}>meta: {Math.round(meta)}</span>
+      </div>
+    </div>
+  )
+}
 
 export default function Seguimiento({ perfil }) {
   const navigate = useNavigate()
@@ -57,13 +63,19 @@ export default function Seguimiento({ perfil }) {
   const [busqueda, setBusqueda] = useState('')
   const [alimentos, setAlimentos] = useState([])
   const [resultados, setResultados] = useState([])
-  const [nuevaComida, setNuevaComida] = useState({ nombre: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', gramos: '100', momento: 'Desayuno' })
+  const [alimentoSel, setAlimentoSel] = useState(null)
+  const [gramos, setGramos] = useState('100')
+  const [momento, setMomento] = useState('Desayuno')
   const [modoManual, setModoManual] = useState(false)
-  const [alimentoBase, setAlimentoBase] = useState(null)
+  const [manualData, setManualData] = useState({ nombre: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '' })
   const [ejercicios, setEjercicios] = useState([])
   const [nuevoEj, setNuevoEj] = useState({ ejercicio: '', series: '', repeticiones: '', peso_kg: '', notas: '' })
-  const [metas, setMetas] = useState(METAS_DEFAULT)
-  const [metasInput, setMetasInput] = useState(METAS_DEFAULT)
+  const [metas, setMetas] = useState({ calorias: 2000, proteinas: 150, carbohidratos: 200, grasas: 65 })
+  const [editandoMetas, setEditandoMetas] = useState(false)
+  const [metasForm, setMetasForm] = useState({ calorias: '', proteinas: '', carbohidratos: '', grasas: '' })
+  const [calcTab, setCalcTab] = useState(false)
+  const [calcData, setCalcData] = useState({ peso: '', altura: '', edad: '', sexo: 'masculino', actividad: '1.375', objetivo: 'perder' })
+  const [calcResult, setCalcResult] = useState(null)
 
   useEffect(() => { cargarTodo() }, [fecha])
 
@@ -77,19 +89,49 @@ export default function Seguimiento({ perfil }) {
     setComidas(c || [])
     const { data: e } = await supabase.from('registros_entrenamiento').select('*').eq('alumno_id', id).eq('fecha', fecha).order('created_at')
     setEjercicios(e || [])
-    const { data: al } = await supabase.from('alimentos').select('*').order('nombre').limit(2000)
+    const { data: al } = await supabase.from('alimentos').select('*').order('nombre').limit(300)
     setAlimentos(al || [])
-    const { data: m } = await supabase.from('metas_nutricionales').select('*').eq('alumno_id', id).maybeSingle()
-    if (m) {
-      const cargadas = {
-        calorias: parseFloat(m.calorias) || METAS_DEFAULT.calorias,
-        proteinas: parseFloat(m.proteinas) || METAS_DEFAULT.proteinas,
-        carbohidratos: parseFloat(m.carbohidratos) || METAS_DEFAULT.carbohidratos,
-        grasas: parseFloat(m.grasas) || METAS_DEFAULT.grasas
-      }
-      setMetas(cargadas)
-      setMetasInput(cargadas)
+    const { data: m } = await supabase.from('metas_nutricionales').select('*').eq('alumno_id', id).single()
+    if (m) setMetas(m)
+  }
+
+  function calcularTDEE() {
+    const { peso: p, altura: h, edad, sexo, actividad, objetivo } = calcData
+    if (!p || !h || !edad) return
+    let tmb = sexo === 'masculino'
+      ? 10 * parseFloat(p) + 6.25 * parseFloat(h) - 5 * parseFloat(edad) + 5
+      : 10 * parseFloat(p) + 6.25 * parseFloat(h) - 5 * parseFloat(edad) - 161
+    let tdee = tmb * parseFloat(actividad)
+    let calorias = tdee
+    if (objetivo === 'perder') calorias = tdee - 400
+    if (objetivo === 'perder_rapido') calorias = tdee - 700
+    if (objetivo === 'ganar') calorias = tdee + 300
+    calorias = Math.round(calorias)
+    const prot = Math.round(parseFloat(p) * 2.0)
+    const gras = Math.round((calorias * 0.25) / 9)
+    const carb = Math.round((calorias - prot * 4 - gras * 9) / 4)
+    setCalcResult({ calorias, proteinas: prot, carbohidratos: carb, grasas: gras, tdee: Math.round(tdee) })
+  }
+
+  function aplicarResultado() {
+    if (!calcResult) return
+    setMetasForm({ calorias: calcResult.calorias, proteinas: calcResult.proteinas, carbohidratos: calcResult.carbohidratos, grasas: calcResult.grasas })
+    setEditandoMetas(true)
+    setCalcTab(false)
+  }
+
+  async function guardarMetas() {
+    const nuevas = { alumno_id: perfil.id, calorias: parseFloat(metasForm.calorias), proteinas: parseFloat(metasForm.proteinas), carbohidratos: parseFloat(metasForm.carbohidratos), grasas: parseFloat(metasForm.grasas) }
+    const { data: existing } = await supabase.from('metas_nutricionales').select('*').eq('alumno_id', perfil.id).single()
+    if (existing) {
+      await supabase.from('metas_nutricionales').update(nuevas).eq('alumno_id', perfil.id)
+    } else {
+      await supabase.from('metas_nutricionales').insert(nuevas)
     }
+    setMetas(nuevas)
+    setEditandoMetas(false)
+    setMsg('Metas guardadas ✓')
+    setTimeout(() => setMsg(''), 2000)
   }
 
   async function guardarPeso() {
@@ -119,78 +161,61 @@ export default function Seguimiento({ perfil }) {
 
   function buscarAlimento(q) {
     setBusqueda(q)
+    setAlimentoSel(null)
     if (q.length < 2) { setResultados([]); return }
-    const res = alimentos.filter(a => a.nombre.toLowerCase().includes(q.toLowerCase())).slice(0, 8)
+    const res = alimentos.filter(a => a.nombre.toLowerCase().includes(q.toLowerCase())).slice(0, 10)
     setResultados(res)
   }
 
   function seleccionarAlimento(al) {
-    const porcion = parseFloat(al.porcion_gramos) || 100
-    setAlimentoBase({
-      nombre: al.nombre,
-      cal_por_g: parseFloat(al.calorias) / porcion,
-      prot_por_g: parseFloat(al.proteinas) / porcion,
-      carb_por_g: parseFloat(al.carbohidratos) / porcion,
-      gras_por_g: parseFloat(al.grasas) / porcion
-    })
-    setNuevaComida({
-      ...nuevaComida,
-      nombre: al.nombre,
-      calorias: al.calorias,
-      proteinas: al.proteinas,
-      carbohidratos: al.carbohidratos,
-      grasas: al.grasas,
-      gramos: porcion
-    })
+    setAlimentoSel(al)
     setBusqueda(al.nombre)
     setResultados([])
+    setGramos('100')
     setModoManual(false)
   }
 
-  function actualizarGramos(g) {
-    if (alimentoBase && g !== '') {
-      const gramos = parseFloat(g) || 0
-      setNuevaComida({
-        ...nuevaComida,
-        gramos: g,
-        calorias: (alimentoBase.cal_por_g * gramos).toFixed(1),
-        proteinas: (alimentoBase.prot_por_g * gramos).toFixed(1),
-        carbohidratos: (alimentoBase.carb_por_g * gramos).toFixed(1),
-        grasas: (alimentoBase.gras_por_g * gramos).toFixed(1)
-      })
-    } else {
-      setNuevaComida({ ...nuevaComida, gramos: g })
+  function calcularPorGramos(al, g) {
+    const factor = parseFloat(g) / 100
+    return {
+      calorias: Math.round(al.calorias * factor * 10) / 10,
+      proteinas: Math.round(al.proteinas * factor * 10) / 10,
+      carbohidratos: Math.round(al.carbohidratos * factor * 10) / 10,
+      grasas: Math.round(al.grasas * factor * 10) / 10,
     }
   }
 
-  function activarManual() {
-    setModoManual(true)
-    setAlimentoBase(null)
-    setBusqueda('')
-    setResultados([])
-    setNuevaComida({ nombre: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', gramos: '100', momento: nuevaComida.momento })
-  }
-
-  function limpiarFormComida() {
-    setNuevaComida({ nombre: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', gramos: '100', momento: 'Desayuno' })
-    setBusqueda('')
-    setAlimentoBase(null)
-    setModoManual(false)
-  }
+  const macrosPreview = alimentoSel && gramos ? calcularPorGramos(alimentoSel, gramos) : null
 
   async function agregarComida() {
-    if (!nuevaComida.nombre || !nuevaComida.calorias) return
-    await supabase.from('registros_comidas').insert({
-      alumno_id: perfil.id, fecha,
-      nombre_manual: nuevaComida.nombre,
-      calorias: parseFloat(nuevaComida.calorias),
-      proteinas: parseFloat(nuevaComida.proteinas) || 0,
-      carbohidratos: parseFloat(nuevaComida.carbohidratos) || 0,
-      grasas: parseFloat(nuevaComida.grasas) || 0,
-      gramos: parseFloat(nuevaComida.gramos) || 100,
-      momento: nuevaComida.momento
-    })
-    limpiarFormComida()
+    if (modoManual) {
+      if (!manualData.nombre || !manualData.calorias) return
+      await supabase.from('registros_comidas').insert({
+        alumno_id: perfil.id, fecha, momento,
+        nombre_manual: manualData.nombre,
+        calorias: parseFloat(manualData.calorias),
+        proteinas: parseFloat(manualData.proteinas) || 0,
+        carbohidratos: parseFloat(manualData.carbohidratos) || 0,
+        grasas: parseFloat(manualData.grasas) || 0,
+        gramos: 100
+      })
+      setManualData({ nombre: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '' })
+    } else {
+      if (!alimentoSel || !gramos) return
+      const m = calcularPorGramos(alimentoSel, gramos)
+      await supabase.from('registros_comidas').insert({
+        alumno_id: perfil.id, fecha, momento,
+        nombre_manual: `${alimentoSel.nombre} (${gramos}g)`,
+        calorias: m.calorias,
+        proteinas: m.proteinas,
+        carbohidratos: m.carbohidratos,
+        grasas: m.grasas,
+        gramos: parseFloat(gramos)
+      })
+      setAlimentoSel(null)
+      setBusqueda('')
+      setGramos('100')
+    }
     setMsg('Comida agregada ✓')
     cargarTodo()
     setTimeout(() => setMsg(''), 2000)
@@ -215,57 +240,12 @@ export default function Seguimiento({ perfil }) {
     cargarTodo()
   }
 
-  async function guardarMetas() {
-    const m = {
-      alumno_id: perfil.id,
-      calorias: parseFloat(metasInput.calorias) || METAS_DEFAULT.calorias,
-      proteinas: parseFloat(metasInput.proteinas) || METAS_DEFAULT.proteinas,
-      carbohidratos: parseFloat(metasInput.carbohidratos) || METAS_DEFAULT.carbohidratos,
-      grasas: parseFloat(metasInput.grasas) || METAS_DEFAULT.grasas,
-      updated_at: new Date().toISOString()
-    }
-    const { error } = await supabase.from('metas_nutricionales').upsert(m, { onConflict: 'alumno_id' })
-    if (error) {
-      setMsg('Error al guardar metas')
-    } else {
-      setMetas({ calorias: m.calorias, proteinas: m.proteinas, carbohidratos: m.carbohidratos, grasas: m.grasas })
-      setMsg('Metas guardadas ✓')
-    }
-    setTimeout(() => setMsg(''), 2000)
-  }
-
-  const totalCal = comidas.reduce((s, c) => s + (parseFloat(c.calorias) || 0), 0)
-  const totalProt = comidas.reduce((s, c) => s + (parseFloat(c.proteinas) || 0), 0)
-  const totalCarb = comidas.reduce((s, c) => s + (parseFloat(c.carbohidratos) || 0), 0)
-  const totalGras = comidas.reduce((s, c) => s + (parseFloat(c.grasas) || 0), 0)
+  const totalCal = comidas.reduce((s, c) => s + (c.calorias || 0), 0)
+  const totalProt = comidas.reduce((s, c) => s + (c.proteinas || 0), 0)
+  const totalCarb = comidas.reduce((s, c) => s + (c.carbohidratos || 0), 0)
+  const totalGras = comidas.reduce((s, c) => s + (c.grasas || 0), 0)
   const ultimoPeso = registrosPeso[0]?.peso
-
-  const pct = (actual, meta) => meta > 0 ? (actual / meta) * 100 : 0
-  const restante = (actual, meta) => Math.max(0, meta - actual)
-
-  const BarraProgreso = ({ label, actual, meta, unidad, color }) => {
-    const porcentaje = pct(actual, meta)
-    const falta = restante(actual, meta)
-    return (
-      <div style={{ marginBottom: 16 }}>
-        <div style={s.progressLabel}>
-          <span style={{ fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', fontSize: 11, color: '#888' }}>{label}</span>
-          <span>
-            <span style={{ ...s.progressValue, color }}>{Math.round(actual)}</span>
-            <span style={{ color: '#444', fontSize: 13 }}> / {meta}{unidad}</span>
-          </span>
-        </div>
-        <div style={s.progressBar}>
-          <div style={s.progressFill(porcentaje, color)} />
-        </div>
-        <div style={{ fontSize: 11, color: porcentaje >= 100 ? '#4ade80' : '#555', marginTop: 4 }}>
-          {porcentaje >= 100
-            ? `✓ Meta alcanzada (+${Math.round(actual - meta)}${unidad})`
-            : `Faltan ${Math.round(falta)}${unidad} (${Math.round(porcentaje)}%)`}
-        </div>
-      </div>
-    )
-  }
+  const calRestantes = Math.max(0, metas.calorias - totalCal)
 
   return (
     <div style={s.page}>
@@ -280,41 +260,161 @@ export default function Seguimiento({ perfil }) {
         {msg && <div style={s.success}>{msg}</div>}
 
         <div style={s.tabs}>
-          {['resumen', 'peso', 'agua', 'comidas', 'entrenamiento', 'metas'].map(t => (
+          {['resumen', 'comidas', 'peso', 'agua', 'entrenamiento', 'metas'].map(t => (
             <button key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>
-              {{ resumen: '📊 Resumen', peso: '⚖️ Peso', agua: '💧 Agua', comidas: '🍎 Comidas', entrenamiento: '🏋️ Entrenamiento', metas: '🎯 Metas' }[t]}
+              {{ resumen: '📊 Resumen', comidas: '🍎 Comidas', peso: '⚖️ Peso', agua: '💧 Agua', entrenamiento: '🏋️ Entreno', metas: '🎯 Mis Metas' }[t]}
             </button>
           ))}
         </div>
 
         {tab === 'resumen' && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
-              <div style={s.stat}><div style={s.statNum}>{ultimoPeso || '—'}</div><div style={s.statLabel}>Peso actual (kg)</div></div>
-              <div style={s.stat}><div style={s.statNum}>{Math.round(totalCal)}</div><div style={s.statLabel}>Calorías hoy</div></div>
-              <div style={s.stat}><div style={s.statNum}>{vasosHoy}/{META_AGUA}</div><div style={s.statLabel}>Vasos de agua</div></div>
-              <div style={s.stat}><div style={s.statNum}>{ejercicios.length}</div><div style={s.statLabel}>Ejercicios hoy</div></div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 20 }}>
+              <div style={s.stat}><div style={s.statNum}>{ultimoPeso || '—'}</div><div style={s.statLabel}>Peso (kg)</div></div>
+              <div style={s.stat}><div style={{ ...s.statNum, color: totalCal > metas.calorias ? '#ff4d4d' : '#f5e642' }}>{Math.round(totalCal)}</div><div style={s.statLabel}>Calorías consumidas</div></div>
+              <div style={s.stat}><div style={{ ...s.statNum, color: '#60a5fa' }}>{Math.round(calRestantes)}</div><div style={s.statLabel}>Calorías restantes</div></div>
+              <div style={s.stat}><div style={{ ...s.statNum, color: '#60a5fa' }}>{vasosHoy}/{META_AGUA}</div><div style={s.statLabel}>Vasos de agua</div></div>
+              <div style={s.stat}><div style={s.statNum}>{ejercicios.length}</div><div style={s.statLabel}>Ejercicios</div></div>
             </div>
-
             <div style={s.card}>
-              <div style={s.cardTitle}>Progreso del día vs metas</div>
-              <BarraProgreso label="Calorías" actual={totalCal} meta={metas.calorias} unidad=" kcal" color="#f5e642" />
-              <BarraProgreso label="Proteínas" actual={totalProt} meta={metas.proteinas} unidad="g" color="#4ade80" />
-              <BarraProgreso label="Carbohidratos" actual={totalCarb} meta={metas.carbohidratos} unidad="g" color="#60a5fa" />
-              <BarraProgreso label="Grasas" actual={totalGras} meta={metas.grasas} unidad="g" color="#f97316" />
-              <button style={{ ...s.btnSm, marginTop: 8 }} onClick={() => setTab('metas')}>Ajustar metas →</button>
-            </div>
-
-            <div style={s.card}>
-              <div style={s.cardTitle}>Macros del día</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                {[['Proteínas', Math.round(totalProt) + 'g', '#4ade80'], ['Carbohidratos', Math.round(totalCarb) + 'g', '#60a5fa'], ['Grasas', Math.round(totalGras) + 'g', '#f97316']].map(([label, val, color]) => (
-                  <div key={label} style={{ textAlign: 'center', background: '#0d0d0d', borderRadius: 8, padding: '12px' }}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color, letterSpacing: 1 }}>{val}</div>
-                    <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>{label}</div>
+              <div style={s.cardTitle}>Progreso de macros</div>
+              <div style={{ display: 'grid', gap: 16 }}>
+                {[['🔥 Calorías', totalCal, metas.calorias, 'kcal', '#f5e642'], ['🥩 Proteínas', totalProt, metas.proteinas, 'g', '#4ade80'], ['🍚 Carbohidratos', totalCarb, metas.carbohidratos, 'g', '#f5e642'], ['🥑 Grasas', totalGras, metas.grasas, 'g', '#f97316']].map(([label, actual, meta, unit, color]) => (
+                  <div key={label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, color: '#ccc', fontWeight: 500 }}>{label}</span>
+                      <span style={{ fontSize: 12, color: '#666' }}>{Math.round(actual)}{unit} / {meta}{unit}</span>
+                    </div>
+                    <ProgressBar actual={actual} meta={meta} color={color} />
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'comidas' && (
+          <div>
+            <div style={s.card}>
+              <div style={s.cardTitle}>Agregar comida</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                <button style={{ ...s.btnSm, ...(!modoManual ? { background: '#f5e642', color: '#000', borderColor: '#f5e642' } : {}) }} onClick={() => setModoManual(false)}>🔍 Buscar</button>
+                <button style={{ ...s.btnSm, ...(modoManual ? { background: '#f5e642', color: '#000', borderColor: '#f5e642' } : {}) }} onClick={() => { setModoManual(true); setAlimentoSel(null); setBusqueda('') }}>✏️ Manual</button>
+              </div>
+
+              {!modoManual && (
+                <div style={s.grid}>
+                  <div style={{ position: 'relative' }}>
+                    <label style={s.label}>Buscar alimento</label>
+                    <input style={s.input} value={busqueda} onChange={e => buscarAlimento(e.target.value)} placeholder="Ej: arroz, pollo, banana..." />
+                    {resultados.length > 0 && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#0d0d0d', border: '1px solid #222', borderRadius: 8, zIndex: 50, maxHeight: 260, overflowY: 'auto' }}>
+                        {resultados.map(a => (
+                          <div key={a.id} style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #1a1a1a' }}
+                            onClick={() => seleccionarAlimento(a)}
+                            onMouseEnter={e => e.currentTarget.style.background = '#1a1a1a'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                            <div style={{ fontSize: 13, color: '#ccc' }}>{a.nombre}</div>
+                            <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
+                              {a.calorias} kcal · P: {a.proteinas}g · C: {a.carbohidratos}g · G: {a.grasas}g — por 100g
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {alimentoSel && (
+                    <>
+                      <div style={{ background: '#0d0d0d', border: '1px solid #f5e64230', borderRadius: 8, padding: '12px 16px' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#f5e642', marginBottom: 4 }}>{alimentoSel.nombre}</div>
+                        <div style={{ fontSize: 11, color: '#555' }}>Base: {alimentoSel.calorias} kcal / 100g</div>
+                      </div>
+                      <div style={s.row}>
+                        <div>
+                          <label style={s.label}>Gramos</label>
+                          <input style={s.input} type="number" value={gramos} onChange={e => setGramos(e.target.value)} placeholder="100" />
+                        </div>
+                        <div>
+                          <label style={s.label}>Momento</label>
+                          <select style={s.select} value={momento} onChange={e => setMomento(e.target.value)}>
+                            {MOMENTOS.map(m => <option key={m}>{m}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      {macrosPreview && gramos > 0 && (
+                        <div style={{ background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, padding: '12px 16px' }}>
+                          <div style={{ fontSize: 11, color: '#555', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>Para {gramos}g:</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
+                            <div><div style={{ fontSize: 18, fontWeight: 700, color: '#f5e642', fontFamily: "'Bebas Neue', sans-serif" }}>{macrosPreview.calorias}</div><div style={{ fontSize: 10, color: '#555' }}>kcal</div></div>
+                            <div><div style={{ fontSize: 18, fontWeight: 700, color: '#4ade80', fontFamily: "'Bebas Neue', sans-serif" }}>{macrosPreview.proteinas}g</div><div style={{ fontSize: 10, color: '#555' }}>prot</div></div>
+                            <div><div style={{ fontSize: 18, fontWeight: 700, color: '#f5e642', fontFamily: "'Bebas Neue', sans-serif" }}>{macrosPreview.carbohidratos}g</div><div style={{ fontSize: 10, color: '#555' }}>carb</div></div>
+                            <div><div style={{ fontSize: 18, fontWeight: 700, color: '#f97316', fontFamily: "'Bebas Neue', sans-serif" }}>{macrosPreview.grasas}g</div><div style={{ fontSize: 10, color: '#555' }}>gras</div></div>
+                          </div>
+                        </div>
+                      )}
+                      <button style={s.btn} onClick={agregarComida}>Agregar al diario</button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {modoManual && (
+                <div style={s.grid}>
+                  <div><label style={s.label}>Nombre</label><input style={s.input} value={manualData.nombre} onChange={e => setManualData({ ...manualData, nombre: e.target.value })} placeholder="Ej: Ensalada casera" /></div>
+                  <div style={s.row}>
+                    <div><label style={s.label}>Calorías</label><input style={s.input} type="number" value={manualData.calorias} onChange={e => setManualData({ ...manualData, calorias: e.target.value })} placeholder="kcal" /></div>
+                    <div><label style={s.label}>Momento</label><select style={s.select} value={momento} onChange={e => setMomento(e.target.value)}>{MOMENTOS.map(m => <option key={m}>{m}</option>)}</select></div>
+                  </div>
+                  <div style={s.row3}>
+                    <div><label style={s.label}>Proteínas (g)</label><input style={s.input} type="number" value={manualData.proteinas} onChange={e => setManualData({ ...manualData, proteinas: e.target.value })} placeholder="g" /></div>
+                    <div><label style={s.label}>Carbos (g)</label><input style={s.input} type="number" value={manualData.carbohidratos} onChange={e => setManualData({ ...manualData, carbohidratos: e.target.value })} placeholder="g" /></div>
+                    <div><label style={s.label}>Grasas (g)</label><input style={s.input} type="number" value={manualData.grasas} onChange={e => setManualData({ ...manualData, grasas: e.target.value })} placeholder="g" /></div>
+                  </div>
+                  <button style={s.btn} onClick={agregarComida}>Agregar al diario</button>
+                </div>
+              )}
+            </div>
+
+            <div style={s.card}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={s.cardTitle}>Diario del día</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: totalCal > metas.calorias ? '#ff4d4d' : '#f5e642' }}>{Math.round(totalCal)} kcal</div>
+              </div>
+              {comidas.length === 0 ? <div style={{ color: '#333', fontSize: 14 }}>No hay comidas registradas hoy</div> :
+                MOMENTOS.map(mom => {
+                  const del = comidas.filter(c => c.momento === mom)
+                  if (del.length === 0) return null
+                  const subtotal = del.reduce((s, c) => s + c.calorias, 0)
+                  return (
+                    <div key={mom} style={{ marginBottom: 20 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#f5e642' }}>{mom}</div>
+                        <div style={{ fontSize: 11, color: '#555' }}>{Math.round(subtotal)} kcal</div>
+                      </div>
+                      {del.map(c => (
+                        <div key={c.id} style={s.item}>
+                          <div>
+                            <div style={s.itemText}>{c.nombre_manual}</div>
+                            <div style={s.itemSub}>{Math.round(c.calorias)} kcal · P: {Math.round(c.proteinas)}g · C: {Math.round(c.carbohidratos)}g · G: {Math.round(c.grasas)}g</div>
+                          </div>
+                          <button style={s.btnDanger} onClick={() => eliminarComida(c.id)}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })}
+              {comidas.length > 0 && (
+                <div style={{ background: '#0d0d0d', borderRadius: 8, padding: '14px 16px', marginTop: 8 }}>
+                  <div style={{ fontSize: 11, color: '#555', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Total del día</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
+                    <div><div style={{ fontSize: 20, fontWeight: 700, color: '#f5e642', fontFamily: "'Bebas Neue', sans-serif" }}>{Math.round(totalCal)}</div><div style={{ fontSize: 10, color: '#555' }}>kcal</div></div>
+                    <div><div style={{ fontSize: 20, fontWeight: 700, color: '#4ade80', fontFamily: "'Bebas Neue', sans-serif" }}>{Math.round(totalProt)}g</div><div style={{ fontSize: 10, color: '#555' }}>prot</div></div>
+                    <div><div style={{ fontSize: 20, fontWeight: 700, color: '#f5e642', fontFamily: "'Bebas Neue', sans-serif" }}>{Math.round(totalCarb)}g</div><div style={{ fontSize: 10, color: '#555' }}>carb</div></div>
+                    <div><div style={{ fontSize: 20, fontWeight: 700, color: '#f97316', fontFamily: "'Bebas Neue', sans-serif" }}>{Math.round(totalGras)}g</div><div style={{ fontSize: 10, color: '#555' }}>gras</div></div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -324,22 +424,27 @@ export default function Seguimiento({ perfil }) {
             <div style={s.card}>
               <div style={s.cardTitle}>Registrar peso</div>
               <div style={{ display: 'flex', gap: 12 }}>
-                <input style={{ ...s.input, flex: 1 }} type="number" step="0.1" value={peso} onChange={e => setPeso(e.target.value)} placeholder="Ej: 85.5" />
+                <input style={{ ...s.input, flex: 1 }} type="number" step="0.1" value={peso} onChange={e => setPeso(e.target.value)} placeholder="Ej: 85.5 kg" />
                 <button style={s.btn} onClick={guardarPeso}>Guardar</button>
               </div>
             </div>
             <div style={s.card}>
-              <div style={s.cardTitle}>Historial de peso</div>
+              <div style={s.cardTitle}>Historial</div>
               {registrosPeso.length === 0 ? <div style={{ color: '#333', fontSize: 14 }}>No hay registros todavía</div> :
-                registrosPeso.map(r => (
-                  <div key={r.id} style={s.item}>
-                    <div>
-                      <div style={s.itemText}>{r.peso} kg</div>
-                      <div style={s.itemSub}>{new Date(r.fecha).toLocaleDateString('es-AR')}</div>
+                registrosPeso.map((r, i) => {
+                  const diff = i < registrosPeso.length - 1 ? r.peso - registrosPeso[i + 1].peso : null
+                  return (
+                    <div key={r.id} style={s.item}>
+                      <div>
+                        <div style={s.itemText}>{r.peso} kg
+                          {diff !== null && <span style={{ marginLeft: 8, fontSize: 12, color: diff < 0 ? '#4ade80' : diff > 0 ? '#ff4d4d' : '#555' }}>{diff > 0 ? '+' : ''}{diff.toFixed(1)} kg</span>}
+                        </div>
+                        <div style={s.itemSub}>{new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+                      </div>
+                      <button style={s.btnDanger} onClick={() => eliminarPeso(r.id)}>✕</button>
                     </div>
-                    <button style={s.btnDanger} onClick={() => eliminarPeso(r.id)}>✕</button>
-                  </div>
-                ))}
+                  )
+                })}
             </div>
           </div>
         )}
@@ -347,141 +452,15 @@ export default function Seguimiento({ perfil }) {
         {tab === 'agua' && (
           <div style={s.card}>
             <div style={s.cardTitle}>Registro de agua</div>
-            <div style={{ fontSize: 14, color: '#555', marginBottom: 16 }}>Meta: {META_AGUA} vasos por día.</div>
+            <div style={{ fontSize: 14, color: '#555', marginBottom: 20 }}>Meta: {META_AGUA} vasos (aprox. 2 litros). Tocá para registrar.</div>
             <div style={s.agua}>
               {Array.from({ length: META_AGUA }).map((_, i) => (
                 <div key={i} style={s.vaso(i < vasosHoy)} onClick={() => toggleVaso(i)}>💧</div>
               ))}
             </div>
-            <div style={{ marginTop: 16, fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: vasosHoy >= META_AGUA ? '#4ade80' : '#f5e642' }}>
-              {vasosHoy} / {META_AGUA} vasos
-            </div>
-            {vasosHoy >= META_AGUA && <div style={{ color: '#4ade80', fontSize: 14, marginTop: 8 }}>✅ ¡Meta de agua alcanzada!</div>}
-          </div>
-        )}
-
-        {tab === 'comidas' && (
-          <div>
-            <div style={s.card}>
-              <div style={s.cardTitle}>Agregar comida</div>
-              <div style={s.grid}>
-                <div>
-                  <label style={s.label}>Buscar alimento</label>
-                  <input style={s.input} value={busqueda} onChange={e => buscarAlimento(e.target.value)} placeholder="Ej: pollo, arroz, manzana..." />
-                  {resultados.length > 0 && (
-                    <div style={{ background: '#0d0d0d', border: '1px solid #222', borderRadius: 8, marginTop: 4 }}>
-                      {resultados.map(a => (
-                        <div key={a.id} style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #1a1a1a', fontSize: 13 }}
-                          onClick={() => seleccionarAlimento(a)}
-                          onMouseEnter={e => e.currentTarget.style.background = '#1a1a1a'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                          <span style={{ color: '#ccc' }}>{a.nombre}</span>
-                          <span style={{ color: '#555', marginLeft: 8 }}>{a.calorias} kcal / {a.porcion_gramos}g</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button style={s.btnSm} onClick={() => modoManual ? limpiarFormComida() : activarManual()}>
-                    {modoManual ? 'Usar búsqueda' : '+ Agregar manualmente'}
-                  </button>
-                  {(nuevaComida.nombre || modoManual) && (
-                    <button style={s.btnSm} onClick={limpiarFormComida}>Limpiar</button>
-                  )}
-                </div>
-
-                {alimentoBase && nuevaComida.gramos && (
-                  <div style={s.preview}>
-                    <div style={s.previewTitle}>📐 Cálculo automático para {nuevaComida.gramos}g</div>
-                    <div style={s.previewGrid}>
-                      <div style={s.previewItem}>
-                        <div style={{ ...s.previewVal, color: '#f5e642' }}>{nuevaComida.calorias}</div>
-                        <div style={s.previewLab}>kcal</div>
-                      </div>
-                      <div style={s.previewItem}>
-                        <div style={{ ...s.previewVal, color: '#4ade80' }}>{nuevaComida.proteinas}g</div>
-                        <div style={s.previewLab}>Proteínas</div>
-                      </div>
-                      <div style={s.previewItem}>
-                        <div style={{ ...s.previewVal, color: '#60a5fa' }}>{nuevaComida.carbohidratos}g</div>
-                        <div style={s.previewLab}>Carbos</div>
-                      </div>
-                      <div style={s.previewItem}>
-                        <div style={{ ...s.previewVal, color: '#f97316' }}>{nuevaComida.grasas}g</div>
-                        <div style={s.previewLab}>Grasas</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {(modoManual || nuevaComida.nombre) && (
-                  <>
-                    {modoManual && (
-                      <div>
-                        <label style={s.label}>Nombre del alimento</label>
-                        <input style={s.input} value={nuevaComida.nombre} onChange={e => setNuevaComida({ ...nuevaComida, nombre: e.target.value })} placeholder="Ej: Ensalada casera" />
-                      </div>
-                    )}
-                    <div style={s.row}>
-                      <div>
-                        <label style={s.label}>Gramos {alimentoBase && <span style={{ color: '#f5e642', textTransform: 'none' }}>(auto-calcula)</span>}</label>
-                        <input style={s.input} type="number" value={nuevaComida.gramos} onChange={e => actualizarGramos(e.target.value)} placeholder="g" />
-                      </div>
-                      <div>
-                        <label style={s.label}>Calorías</label>
-                        <input style={s.input} type="number" value={nuevaComida.calorias} onChange={e => setNuevaComida({ ...nuevaComida, calorias: e.target.value })} placeholder="kcal" disabled={!!alimentoBase} />
-                      </div>
-                    </div>
-                    <div style={s.row}>
-                      <div>
-                        <label style={s.label}>Proteínas (g)</label>
-                        <input style={s.input} type="number" value={nuevaComida.proteinas} onChange={e => setNuevaComida({ ...nuevaComida, proteinas: e.target.value })} placeholder="g" disabled={!!alimentoBase} />
-                      </div>
-                      <div>
-                        <label style={s.label}>Carbohidratos (g)</label>
-                        <input style={s.input} type="number" value={nuevaComida.carbohidratos} onChange={e => setNuevaComida({ ...nuevaComida, carbohidratos: e.target.value })} placeholder="g" disabled={!!alimentoBase} />
-                      </div>
-                    </div>
-                    <div style={s.row}>
-                      <div>
-                        <label style={s.label}>Grasas (g)</label>
-                        <input style={s.input} type="number" value={nuevaComida.grasas} onChange={e => setNuevaComida({ ...nuevaComida, grasas: e.target.value })} placeholder="g" disabled={!!alimentoBase} />
-                      </div>
-                      <div>
-                        <label style={s.label}>Momento</label>
-                        <select style={s.select} value={nuevaComida.momento} onChange={e => setNuevaComida({ ...nuevaComida, momento: e.target.value })}>
-                          {MOMENTOS.map(m => <option key={m}>{m}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                    <button style={s.btn} onClick={agregarComida}>Agregar comida</button>
-                  </>
-                )}
-              </div>
-            </div>
-            <div style={s.card}>
-              <div style={s.cardTitle}>Comidas del día — {Math.round(totalCal)} kcal</div>
-              {comidas.length === 0 ? <div style={{ color: '#333', fontSize: 14 }}>No hay comidas registradas hoy</div> :
-                MOMENTOS.map(momento => {
-                  const del = comidas.filter(c => c.momento === momento)
-                  if (del.length === 0) return null
-                  return (
-                    <div key={momento} style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#f5e642', marginBottom: 8 }}>{momento}</div>
-                      {del.map(c => (
-                        <div key={c.id} style={s.item}>
-                          <div>
-                            <div style={s.itemText}>{c.nombre_manual} {c.gramos && <span style={{ color: '#555', fontSize: 12 }}>· {c.gramos}g</span>}</div>
-                            <div style={s.itemSub}>{Math.round(c.calorias)} kcal · P: {Math.round(c.proteinas)}g · C: {Math.round(c.carbohidratos)}g · G: {Math.round(c.grasas)}g</div>
-                          </div>
-                          <button style={s.btnDanger} onClick={() => eliminarComida(c.id)}>✕</button>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                })}
-            </div>
+            <div style={{ marginTop: 20, fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, color: vasosHoy >= META_AGUA ? '#4ade80' : '#f5e642' }}>{vasosHoy} / {META_AGUA}</div>
+            <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{vasosHoy * 250}ml de {META_AGUA * 250}ml</div>
+            {vasosHoy >= META_AGUA && <div style={{ color: '#4ade80', fontSize: 14, marginTop: 12, fontWeight: 600 }}>✅ ¡Meta alcanzada!</div>}
           </div>
         )}
 
@@ -524,53 +503,85 @@ export default function Seguimiento({ perfil }) {
         {tab === 'metas' && (
           <div>
             <div style={s.card}>
-              <div style={s.cardTitle}>🎯 Mis metas diarias</div>
-              <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
-                Configurá cuánto querés consumir por día. Las barras del Resumen te van a mostrar cuánto te falta.
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={s.cardTitle}>🧮 Calculadora de calorías</div>
+                <button style={s.btnSm} onClick={() => setCalcTab(!calcTab)}>{calcTab ? 'Cerrar' : 'Calcular mis macros'}</button>
               </div>
-              <div style={s.grid}>
-                <div style={s.row}>
-                  <div>
-                    <label style={s.label}>Calorías (kcal)</label>
-                    <input style={s.input} type="number" value={metasInput.calorias} onChange={e => setMetasInput({ ...metasInput, calorias: e.target.value })} placeholder="2000" />
+              <div style={{ fontSize: 13, color: '#555' }}>Calculá tus calorías y macros ideales usando la fórmula Mifflin-St Jeor.</div>
+              {calcTab && (
+                <div style={{ ...s.grid, marginTop: 16 }}>
+                  <div style={s.row}>
+                    <div><label style={s.label}>Peso (kg)</label><input style={s.input} type="number" value={calcData.peso} onChange={e => setCalcData({ ...calcData, peso: e.target.value })} placeholder="85" /></div>
+                    <div><label style={s.label}>Altura (cm)</label><input style={s.input} type="number" value={calcData.altura} onChange={e => setCalcData({ ...calcData, altura: e.target.value })} placeholder="175" /></div>
                   </div>
-                  <div>
-                    <label style={s.label}>Proteínas (g)</label>
-                    <input style={s.input} type="number" value={metasInput.proteinas} onChange={e => setMetasInput({ ...metasInput, proteinas: e.target.value })} placeholder="150" />
+                  <div style={s.row}>
+                    <div><label style={s.label}>Edad</label><input style={s.input} type="number" value={calcData.edad} onChange={e => setCalcData({ ...calcData, edad: e.target.value })} placeholder="30" /></div>
+                    <div><label style={s.label}>Sexo</label><select style={s.select} value={calcData.sexo} onChange={e => setCalcData({ ...calcData, sexo: e.target.value })}><option value="masculino">Masculino</option><option value="femenino">Femenino</option></select></div>
+                  </div>
+                  <div><label style={s.label}>Nivel de actividad</label>
+                    <select style={s.select} value={calcData.actividad} onChange={e => setCalcData({ ...calcData, actividad: e.target.value })}>
+                      <option value="1.2">Sedentario (sin ejercicio)</option>
+                      <option value="1.375">Poco activo (1-3 días/semana)</option>
+                      <option value="1.55">Moderadamente activo (3-5 días/semana)</option>
+                      <option value="1.725">Muy activo (6-7 días/semana)</option>
+                      <option value="1.9">Extremadamente activo (2x por día)</option>
+                    </select>
+                  </div>
+                  <div><label style={s.label}>Objetivo</label>
+                    <select style={s.select} value={calcData.objetivo} onChange={e => setCalcData({ ...calcData, objetivo: e.target.value })}>
+                      <option value="perder">Perder grasa (déficit -400 kcal)</option>
+                      <option value="perder_rapido">Perder grasa rápido (déficit -700 kcal)</option>
+                      <option value="mantener">Mantener peso</option>
+                      <option value="ganar">Ganar músculo (+300 kcal)</option>
+                    </select>
+                  </div>
+                  <button style={s.btn} onClick={calcularTDEE}>Calcular</button>
+                  {calcResult && (
+                    <div style={{ background: '#0d0d0d', border: '1px solid #f5e64230', borderRadius: 10, padding: '16px' }}>
+                      <div style={{ fontSize: 11, color: '#f5e642', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>Tu resultado</div>
+                      <div style={{ fontSize: 13, color: '#555', marginBottom: 12 }}>TDEE: <span style={{ color: '#888' }}>{calcResult.tdee} kcal/día</span></div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center', marginBottom: 16 }}>
+                        <div><div style={{ fontSize: 24, fontWeight: 700, color: '#f5e642', fontFamily: "'Bebas Neue', sans-serif" }}>{calcResult.calorias}</div><div style={{ fontSize: 10, color: '#555' }}>kcal/día</div></div>
+                        <div><div style={{ fontSize: 24, fontWeight: 700, color: '#4ade80', fontFamily: "'Bebas Neue', sans-serif" }}>{calcResult.proteinas}g</div><div style={{ fontSize: 10, color: '#555' }}>proteínas</div></div>
+                        <div><div style={{ fontSize: 24, fontWeight: 700, color: '#f5e642', fontFamily: "'Bebas Neue', sans-serif" }}>{calcResult.carbohidratos}g</div><div style={{ fontSize: 10, color: '#555' }}>carbos</div></div>
+                        <div><div style={{ fontSize: 24, fontWeight: 700, color: '#f97316', fontFamily: "'Bebas Neue', sans-serif" }}>{calcResult.grasas}g</div><div style={{ fontSize: 10, color: '#555' }}>grasas</div></div>
+                      </div>
+                      <button style={s.btn} onClick={aplicarResultado}>Usar estos valores como mis metas</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div style={s.card}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={s.cardTitle}>🎯 Mis metas diarias</div>
+                {!editandoMetas && <button style={s.btnSm} onClick={() => { setMetasForm({ calorias: metas.calorias, proteinas: metas.proteinas, carbohidratos: metas.carbohidratos, grasas: metas.grasas }); setEditandoMetas(true) }}>Editar</button>}
+              </div>
+              {!editandoMetas ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                  {[['🔥 Calorías', metas.calorias, 'kcal', '#f5e642'], ['🥩 Proteínas', metas.proteinas, 'g', '#4ade80'], ['🍚 Carbohidratos', metas.carbohidratos, 'g', '#f5e642'], ['🥑 Grasas', metas.grasas, 'g', '#f97316']].map(([label, val, unit, color]) => (
+                    <div key={label} style={{ background: '#0d0d0d', borderRadius: 8, padding: '14px', textAlign: 'center' }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color, letterSpacing: 1 }}>{val}{unit}</div>
+                      <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={s.grid}>
+                  <div style={s.row}>
+                    <div><label style={s.label}>Calorías (kcal)</label><input style={s.input} type="number" value={metasForm.calorias} onChange={e => setMetasForm({ ...metasForm, calorias: e.target.value })} /></div>
+                    <div><label style={s.label}>Proteínas (g)</label><input style={s.input} type="number" value={metasForm.proteinas} onChange={e => setMetasForm({ ...metasForm, proteinas: e.target.value })} /></div>
+                  </div>
+                  <div style={s.row}>
+                    <div><label style={s.label}>Carbohidratos (g)</label><input style={s.input} type="number" value={metasForm.carbohidratos} onChange={e => setMetasForm({ ...metasForm, carbohidratos: e.target.value })} /></div>
+                    <div><label style={s.label}>Grasas (g)</label><input style={s.input} type="number" value={metasForm.grasas} onChange={e => setMetasForm({ ...metasForm, grasas: e.target.value })} /></div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button style={s.btn} onClick={guardarMetas}>Guardar metas</button>
+                    <button style={s.btnSm} onClick={() => setEditandoMetas(false)}>Cancelar</button>
                   </div>
                 </div>
-                <div style={s.row}>
-                  <div>
-                    <label style={s.label}>Carbohidratos (g)</label>
-                    <input style={s.input} type="number" value={metasInput.carbohidratos} onChange={e => setMetasInput({ ...metasInput, carbohidratos: e.target.value })} placeholder="200" />
-                  </div>
-                  <div>
-                    <label style={s.label}>Grasas (g)</label>
-                    <input style={s.input} type="number" value={metasInput.grasas} onChange={e => setMetasInput({ ...metasInput, grasas: e.target.value })} placeholder="65" />
-                  </div>
-                </div>
-                <button style={s.btn} onClick={guardarMetas}>Guardar metas</button>
-              </div>
-            </div>
-
-            <div style={s.card}>
-              <div style={s.cardTitle}>💡 Guía rápida</div>
-              <div style={{ fontSize: 13, color: '#888', lineHeight: 1.7 }}>
-                <div style={{ marginBottom: 10 }}><strong style={{ color: '#f5e642' }}>Calorías:</strong> Para mantener peso, multiplicá tu peso (kg) × 30. Para bajar, restá 300-500. Para subir, sumá 300-500.</div>
-                <div style={{ marginBottom: 10 }}><strong style={{ color: '#4ade80' }}>Proteínas:</strong> 1.6 a 2.2g por kg de peso corporal si entrenás fuerza.</div>
-                <div style={{ marginBottom: 10 }}><strong style={{ color: '#60a5fa' }}>Carbohidratos:</strong> El resto de las calorías después de proteínas y grasas. Subí si entrenás mucho, bajá si querés definir.</div>
-                <div><strong style={{ color: '#f97316' }}>Grasas:</strong> 0.8 a 1g por kg de peso corporal mínimo, para hormonas saludables.</div>
-              </div>
-            </div>
-
-            <div style={s.card}>
-              <div style={s.cardTitle}>Metas actuales activas</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
-                <div style={s.stat}><div style={{ ...s.statNum, color: '#f5e642' }}>{metas.calorias}</div><div style={s.statLabel}>kcal/día</div></div>
-                <div style={s.stat}><div style={{ ...s.statNum, color: '#4ade80' }}>{metas.proteinas}g</div><div style={s.statLabel}>Proteínas</div></div>
-                <div style={s.stat}><div style={{ ...s.statNum, color: '#60a5fa' }}>{metas.carbohidratos}g</div><div style={s.statLabel}>Carbos</div></div>
-                <div style={s.stat}><div style={{ ...s.statNum, color: '#f97316' }}>{metas.grasas}g</div><div style={s.statLabel}>Grasas</div></div>
-              </div>
+              )}
             </div>
           </div>
         )}
