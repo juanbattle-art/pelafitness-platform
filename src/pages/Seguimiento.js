@@ -77,7 +77,7 @@ export default function Seguimiento({ perfil }) {
     setComidas(c || [])
     const { data: e } = await supabase.from('registros_entrenamiento').select('*').eq('alumno_id', id).eq('fecha', fecha).order('created_at')
     setEjercicios(e || [])
-    const { data: al } = await supabase.from('alimentos').select('*').order('nombre').limit(200)
+    const { data: al } = await supabase.from('alimentos').select('*').order('nombre').limit(2000)
     setAlimentos(al || [])
     const { data: m } = await supabase.from('metas_nutricionales').select('*').eq('alumno_id', id).maybeSingle()
     if (m) {
