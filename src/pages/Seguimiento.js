@@ -301,7 +301,6 @@ export default function Seguimiento({ perfil }) {
                 <button style={{ ...s.btnSm, ...(!modoManual ? { background: '#f5e642', color: '#000', borderColor: '#f5e642' } : {}) }} onClick={() => setModoManual(false)}>🔍 Buscar</button>
                 <button style={{ ...s.btnSm, ...(modoManual ? { background: '#f5e642', color: '#000', borderColor: '#f5e642' } : {}) }} onClick={() => { setModoManual(true); setAlimentoSel(null); setBusqueda('') }}>✏️ Manual</button>
               </div>
-
               {!modoManual && (
                 <div style={s.grid}>
                   <div style={{ position: 'relative' }}>
@@ -315,15 +314,12 @@ export default function Seguimiento({ perfil }) {
                             onMouseEnter={e => e.currentTarget.style.background = '#1a1a1a'}
                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                             <div style={{ fontSize: 13, color: '#ccc' }}>{a.nombre}</div>
-                            <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
-                              {a.calorias} kcal · P: {a.proteinas}g · C: {a.carbohidratos}g · G: {a.grasas}g — por 100g
-                            </div>
+                            <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{a.calorias} kcal · P: {a.proteinas}g · C: {a.carbohidratos}g · G: {a.grasas}g — por 100g</div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-
                   {alimentoSel && (
                     <>
                       <div style={{ background: '#0d0d0d', border: '1px solid #f5e64230', borderRadius: 8, padding: '12px 16px' }}>
@@ -331,16 +327,8 @@ export default function Seguimiento({ perfil }) {
                         <div style={{ fontSize: 11, color: '#555' }}>Base: {alimentoSel.calorias} kcal / 100g</div>
                       </div>
                       <div style={s.row}>
-                        <div>
-                          <label style={s.label}>Gramos</label>
-                          <input style={s.input} type="number" value={gramos} onChange={e => setGramos(e.target.value)} placeholder="100" />
-                        </div>
-                        <div>
-                          <label style={s.label}>Momento</label>
-                          <select style={s.select} value={momento} onChange={e => setMomento(e.target.value)}>
-                            {MOMENTOS.map(m => <option key={m}>{m}</option>)}
-                          </select>
-                        </div>
+                        <div><label style={s.label}>Gramos</label><input style={s.input} type="number" value={gramos} onChange={e => setGramos(e.target.value)} placeholder="100" /></div>
+                        <div><label style={s.label}>Momento</label><select style={s.select} value={momento} onChange={e => setMomento(e.target.value)}>{MOMENTOS.map(m => <option key={m}>{m}</option>)}</select></div>
                       </div>
                       {macrosPreview && gramos > 0 && (
                         <div style={{ background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, padding: '12px 16px' }}>
@@ -358,7 +346,6 @@ export default function Seguimiento({ perfil }) {
                   )}
                 </div>
               )}
-
               {modoManual && (
                 <div style={s.grid}>
                   <div><label style={s.label}>Nombre</label><input style={s.input} value={manualData.nombre} onChange={e => setManualData({ ...manualData, nombre: e.target.value })} placeholder="Ej: Ensalada casera" /></div>
@@ -375,7 +362,6 @@ export default function Seguimiento({ perfil }) {
                 </div>
               )}
             </div>
-
             <div style={s.card}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div style={s.cardTitle}>Diario del día</div>
@@ -452,7 +438,7 @@ export default function Seguimiento({ perfil }) {
         {tab === 'agua' && (
           <div style={s.card}>
             <div style={s.cardTitle}>Registro de agua</div>
-            <div style={{ fontSize: 14, color: '#555', marginBottom: 20 }}>Meta: {META_AGUA} vasos (aprox. 2 litros). Tocá para registrar.</div>
+            <div style={{ fontSize: 14, color: '#555', marginBottom: 20 }}>Meta diaria: {META_AGUA} vasos (aprox. 2 litros). Tocá para registrar.</div>
             <div style={s.agua}>
               {Array.from({ length: META_AGUA }).map((_, i) => (
                 <div key={i} style={s.vaso(i < vasosHoy)} onClick={() => toggleVaso(i)}>💧</div>
@@ -460,7 +446,7 @@ export default function Seguimiento({ perfil }) {
             </div>
             <div style={{ marginTop: 20, fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, color: vasosHoy >= META_AGUA ? '#4ade80' : '#f5e642' }}>{vasosHoy} / {META_AGUA}</div>
             <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>{vasosHoy * 250}ml de {META_AGUA * 250}ml</div>
-            {vasosHoy >= META_AGUA && <div style={{ color: '#4ade80', fontSize: 14, marginTop: 12, fontWeight: 600 }}>✅ ¡Meta alcanzada!</div>}
+            {vasosHoy >= META_AGUA && <div style={{ color: '#4ade80', fontSize: 14, marginTop: 12, fontWeight: 600 }}>✅ ¡Meta de agua alcanzada!</div>}
           </div>
         )}
 
@@ -469,7 +455,7 @@ export default function Seguimiento({ perfil }) {
             <div style={s.card}>
               <div style={s.cardTitle}>Registrar ejercicio</div>
               <div style={s.grid}>
-                <div><label style={s.label}>Ejercicio</label><input style={s.input} value={nuevoEj.ejercicio} onChange={e => setNuevoEj({ ...nuevoEj, ejercicio: e.target.value })} placeholder="Ej: Sentadilla, Press banca..." /></div>
+                <div><label style={s.label}>Ejercicio</label><input style={s.input} value={nuevoEj.ejercicio} onChange={e => setNuevoEj({ ...nuevoEj, ejercicio: e.target.value })} placeholder="Ej: Sentadilla, Press banca, Peso muerto..." /></div>
                 <div style={s.row}>
                   <div><label style={s.label}>Series</label><input style={s.input} type="number" value={nuevoEj.series} onChange={e => setNuevoEj({ ...nuevoEj, series: e.target.value })} placeholder="4" /></div>
                   <div><label style={s.label}>Repeticiones</label><input style={s.input} type="number" value={nuevoEj.repeticiones} onChange={e => setNuevoEj({ ...nuevoEj, repeticiones: e.target.value })} placeholder="10" /></div>
@@ -511,7 +497,7 @@ export default function Seguimiento({ perfil }) {
               {calcTab && (
                 <div style={{ ...s.grid, marginTop: 16 }}>
                   <div style={s.row}>
-                    <div><label style={s.label}>Peso (kg)</label><input style={s.input} type="number" value={calcData.peso} onChange={e => setCalcData({ ...calcData, peso: e.target.value })} placeholder="85" /></div>
+                    <div><label style={s.label}>Peso actual (kg)</label><input style={s.input} type="number" value={calcData.peso} onChange={e => setCalcData({ ...calcData, peso: e.target.value })} placeholder="85" /></div>
                     <div><label style={s.label}>Altura (cm)</label><input style={s.input} type="number" value={calcData.altura} onChange={e => setCalcData({ ...calcData, altura: e.target.value })} placeholder="175" /></div>
                   </div>
                   <div style={s.row}>
@@ -576,8 +562,36 @@ export default function Seguimiento({ perfil }) {
                     <div><label style={s.label}>Carbohidratos (g)</label><input style={s.input} type="number" value={metasForm.carbohidratos} onChange={e => setMetasForm({ ...metasForm, carbohidratos: e.target.value })} /></div>
                     <div><label style={s.label}>Grasas (g)</label><input style={s.input} type="number" value={metasForm.grasas} onChange={e => setMetasForm({ ...metasForm, grasas: e.target.value })} /></div>
                   </div>
+                  {(() => {
+                    const cal = parseFloat(metasForm.calorias) || 0
+                    const prot = parseFloat(metasForm.proteinas) || 0
+                    const carb = parseFloat(metasForm.carbohidratos) || 0
+                    const gras = parseFloat(metasForm.grasas) || 0
+                    const totalMacros = Math.round(prot * 4 + carb * 4 + gras * 9)
+                    const diff = totalMacros - cal
+                    const ok = Math.abs(diff) <= 50
+                    return (
+                      <div style={{ background: ok ? 'rgba(74,222,128,0.05)' : 'rgba(255,77,77,0.05)', border: `1px solid ${ok ? '#4ade8040' : '#ff4d4d40'}`, borderRadius: 8, padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontSize: 12, color: '#555' }}>Calorías de tus macros:</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: ok ? '#4ade80' : '#ff4d4d' }}>{totalMacros} kcal</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontSize: 12, color: '#555' }}>Calorías objetivo:</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#f5e642' }}>{cal} kcal</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: ok ? '#4ade80' : '#ff4d4d', marginTop: 4 }}>
+                          {ok ? '✅ Los macros cuadran con tus calorías' : `❌ Diferencia de ${diff > 0 ? '+' : ''}${diff} kcal — ajustá los macros`}
+                        </div>
+                      </div>
+                    )
+                  })()}
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button style={s.btn} onClick={guardarMetas}>Guardar metas</button>
+                    <button
+                      style={{ ...s.btn, opacity: Math.abs((parseFloat(metasForm.proteinas)||0)*4 + (parseFloat(metasForm.carbohidratos)||0)*4 + (parseFloat(metasForm.grasas)||0)*9 - (parseFloat(metasForm.calorias)||0)) <= 50 ? 1 : 0.4, cursor: Math.abs((parseFloat(metasForm.proteinas)||0)*4 + (parseFloat(metasForm.carbohidratos)||0)*4 + (parseFloat(metasForm.grasas)||0)*9 - (parseFloat(metasForm.calorias)||0)) <= 50 ? 'pointer' : 'not-allowed' }}
+                      onClick={() => { if(Math.abs((parseFloat(metasForm.proteinas)||0)*4 + (parseFloat(metasForm.carbohidratos)||0)*4 + (parseFloat(metasForm.grasas)||0)*9 - (parseFloat(metasForm.calorias)||0)) <= 50) guardarMetas() }}>
+                      Guardar metas
+                    </button>
                     <button style={s.btnSm} onClick={() => setEditandoMetas(false)}>Cancelar</button>
                   </div>
                 </div>
