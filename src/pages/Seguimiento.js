@@ -4,13 +4,20 @@ import { supabase } from '../lib/supabase'
 
 const s = {
   page: { minHeight: '100vh', background: '#0a0a0a', fontFamily: "'DM Sans', sans-serif", paddingBottom: 80 },
-  header: { background: '#111', borderBottom: '1px solid #222', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, gap: 8 },
+  header: { background: '#111', borderBottom: '1px solid #222', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 },
   logo: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, letterSpacing: 2, color: '#f5e642' },
   backBtn: { background: 'none', border: '1px solid #222', color: '#888', borderRadius: 8, padding: '6px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' },
-  fechaWrap: { display: 'flex', gap: 6, alignItems: 'center' },
-  fechaInput: { background: '#1a1a1a', border: '1px solid #222', borderRadius: 8, color: '#888', fontSize: 13, padding: '6px 12px', outline: 'none', fontFamily: 'inherit' },
-  hoyBtn: { background: '#1a1a1a', border: '1px solid #f5e64240', borderRadius: 8, color: '#f5e642', fontSize: 12, padding: '6px 10px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 },
   main: { maxWidth: 720, margin: '0 auto', padding: '20px 16px' },
+  
+  // Barra de navegación de días
+  dayNav: { background: '#111', border: '1px solid #222', borderRadius: 12, padding: '12px 8px', marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 },
+  dayArrow: { background: '#1a1a1a', border: '1px solid #222', borderRadius: 8, color: '#f5e642', fontSize: 18, padding: '8px 14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, lineHeight: 1 },
+  dayCenter: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, cursor: 'pointer', position: 'relative' },
+  dayBadge: { fontSize: 11, color: '#f5e642', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 },
+  dayDate: { fontSize: 13, color: '#ccc', fontWeight: 600 },
+  dayInputHidden: { position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' },
+  hoyBtnSmall: { background: 'rgba(245,230,66,0.1)', border: '1px solid #f5e64240', borderRadius: 6, color: '#f5e642', fontSize: 11, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, marginBottom: 12, marginLeft: 'auto', display: 'block' },
+  
   bottomTabs: { position: 'fixed', bottom: 0, left: 0, right: 0, background: '#111', borderTop: '1px solid #222', display: 'flex', justifyContent: 'space-around', padding: '10px 0 12px', zIndex: 90 },
   bottomTab: (a) => ({ background: 'none', border: 'none', color: a ? '#f5e642' : '#666', fontFamily: 'inherit', fontSize: 11, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '4px 16px', fontWeight: a ? 700 : 500 }),
   bottomIcon: { fontSize: 22, lineHeight: 1 },
@@ -70,8 +77,6 @@ const s = {
   btnSm: { background: '#1a1a1a', color: '#f5e642', border: '1px solid #f5e64240', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 },
   btnDanger: { background: 'rgba(255,77,77,0.1)', color: '#ff4d4d', border: '1px solid rgba(255,77,77,0.2)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' },
   label: { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#555', marginBottom: 6 },
-  input: { width: '100%', background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, color: '#f0f0f0', fontFamily: 'inherit', fontSize: 14, padding: '10px 14px', outline: 'none', boxSizing: 'border-box' },
-  detail: { padding: '0' },
   detailRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #1a1a1a' },
   detailLabel: { fontSize: 13, color: '#999' },
   detailValue: { fontSize: 14, color: '#f0f0f0', fontWeight: 600 },
@@ -79,6 +84,13 @@ const s = {
   vaso: (lleno) => ({ width: 50, height: 50, borderRadius: 10, border: `2px solid ${lleno ? '#60a5fa' : '#222'}`, background: lleno ? 'rgba(96,165,250,0.2)' : 'transparent', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }),
   success: { color: '#4ade80', fontSize: 13, marginBottom: 10, padding: '10px 14px', background: 'rgba(74,222,128,0.05)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8 },
   metaCheck: (ok) => ({ background: ok ? 'rgba(74,222,128,0.05)' : 'rgba(255,77,77,0.05)', border: `1px solid ${ok ? '#4ade8040' : '#ff4d4d40'}`, borderRadius: 8, padding: '12px 14px', marginBottom: 14, fontSize: 12 }),
+  
+  // Resumen 7 días
+  weekDay: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #1a1a1a' },
+  weekDayLeft: { display: 'flex', flexDirection: 'column', gap: 2 },
+  weekDayName: { fontSize: 13, color: '#ccc', fontWeight: 600 },
+  weekDayDate: { fontSize: 11, color: '#666' },
+  weekDayCal: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1 },
 }
 
 const MOMENTOS = [
@@ -89,6 +101,44 @@ const MOMENTOS = [
   { id: 'Snack', icono: '🍎', nombre: 'Snacks' },
 ]
 
+// =================== HELPERS DE FECHA ===================
+function fechaHoy() {
+  // Devuelve la fecha de HOY en formato YYYY-MM-DD usando timezone local
+  const d = new Date()
+  const año = d.getFullYear()
+  const mes = String(d.getMonth() + 1).padStart(2, '0')
+  const dia = String(d.getDate()).padStart(2, '0')
+  return `${año}-${mes}-${dia}`
+}
+
+function sumarDias(fechaStr, dias) {
+  const [año, mes, dia] = fechaStr.split('-').map(Number)
+  const d = new Date(año, mes - 1, dia)
+  d.setDate(d.getDate() + dias)
+  const a = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const di = String(d.getDate()).padStart(2, '0')
+  return `${a}-${m}-${di}`
+}
+
+function formatearFecha(fechaStr) {
+  const hoy = fechaHoy()
+  const ayer = sumarDias(hoy, -1)
+  const mañana = sumarDias(hoy, 1)
+  
+  if (fechaStr === hoy) return { badge: 'HOY', texto: formatearLargo(fechaStr) }
+  if (fechaStr === ayer) return { badge: 'AYER', texto: formatearLargo(fechaStr) }
+  if (fechaStr === mañana) return { badge: 'MAÑANA', texto: formatearLargo(fechaStr) }
+  return { badge: null, texto: formatearLargo(fechaStr) }
+}
+
+function formatearLargo(fechaStr) {
+  const [año, mes, dia] = fechaStr.split('-').map(Number)
+  const d = new Date(año, mes - 1, dia)
+  return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+// =================== CIRCLE PROGRESS ===================
 function CalorieCircle({ consumidas, meta }) {
   const restantes = Math.max(0, meta - consumidas)
   const pct = Math.min((consumidas / meta) * 100, 100)
@@ -121,17 +171,46 @@ function CalorieCircle({ consumidas, meta }) {
   )
 }
 
+// =================== BARRA DE NAVEGACIÓN DE DÍAS ===================
+function DayNavigator({ fecha, setFecha }) {
+  const { badge, texto } = formatearFecha(fecha)
+  const hoy = fechaHoy()
+  
+  return (
+    <>
+      <div style={s.dayNav}>
+        <button style={s.dayArrow} onClick={() => setFecha(sumarDias(fecha, -1))} title="Día anterior">◀</button>
+        <div style={s.dayCenter}>
+          {badge && <div style={s.dayBadge}>{badge}</div>}
+          <div style={s.dayDate}>📅 {texto}</div>
+          <input 
+            type="date" 
+            value={fecha} 
+            onChange={e => setFecha(e.target.value)} 
+            style={s.dayInputHidden}
+          />
+        </div>
+        <button style={s.dayArrow} onClick={() => setFecha(sumarDias(fecha, 1))} title="Día siguiente">▶</button>
+      </div>
+      {fecha !== hoy && (
+        <button style={s.hoyBtnSmall} onClick={() => setFecha(hoy)}>↻ Volver a hoy</button>
+      )}
+    </>
+  )
+}
+
+// =================== COMPONENTE PRINCIPAL ===================
 export default function Seguimiento({ perfil }) {
   const navigate = useNavigate()
   const [tab, setTab] = useState('panel')
-  const hoy = new Date().toISOString().split('T')[0]
-  const [fecha, setFecha] = useState(hoy)
+  const [fecha, setFecha] = useState(fechaHoy())
   const [msg, setMsg] = useState('')
   const [registrosPeso, setRegistrosPeso] = useState([])
   const [vasosHoy, setVasosHoy] = useState(0)
   const [comidas, setComidas] = useState([])
   const [ejercicios, setEjercicios] = useState([])
   const [recientes, setRecientes] = useState([])
+  const [historial7Dias, setHistorial7Dias] = useState([])
   const [metas, setMetas] = useState({ calorias: 2000, proteinas: 150, carbohidratos: 200, grasas: 65 })
   const [fabOpen, setFabOpen] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
@@ -153,12 +232,25 @@ export default function Seguimiento({ perfil }) {
   const META_AGUA = 8
   const timeoutRef = useRef(null)
 
+  // Auto-actualizar a HOY si pasa la medianoche con la app abierta
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nuevaHoy = fechaHoy()
+      // Solo actualizar si estábamos viendo lo que era "hoy" y ya cambió
+      if (fecha < nuevaHoy && tab === 'panel') {
+        setFecha(nuevaHoy)
+      }
+    }, 60000) // chequear cada 1 minuto
+    return () => clearInterval(interval)
+  }, [fecha, tab])
+
   useEffect(() => { cargarTodo() }, [fecha])
+  useEffect(() => { cargarHistorial() }, [tab])
 
   async function cargarTodo() {
     const id = perfil.id
     const [{ data: p }, { data: a }, { data: c }, { data: e }, { data: m }, { data: rec }] = await Promise.all([
-      supabase.from('registros_peso').select('*').eq('alumno_id', id).order('fecha', { ascending: false }).limit(10),
+      supabase.from('registros_peso').select('*').eq('alumno_id', id).order('fecha', { ascending: false }).limit(20),
       supabase.from('registros_agua').select('*').eq('alumno_id', id).eq('fecha', fecha).maybeSingle(),
       supabase.from('registros_comidas').select('*').eq('alumno_id', id).eq('fecha', fecha).order('created_at'),
       supabase.from('registros_entrenamiento').select('*').eq('alumno_id', id).eq('fecha', fecha).order('created_at'),
@@ -171,6 +263,41 @@ export default function Seguimiento({ perfil }) {
     setEjercicios(e || [])
     setRecientes(rec || [])
     if (m) setMetas(m)
+  }
+
+  // Carga el resumen de los últimos 7 días para el Tab Progreso
+  async function cargarHistorial() {
+    if (tab !== 'progreso') return
+    const id = perfil.id
+    const hoy = fechaHoy()
+    const hace7 = sumarDias(hoy, -6)
+    
+    const { data } = await supabase
+      .from('registros_comidas')
+      .select('fecha, calorias')
+      .eq('alumno_id', id)
+      .gte('fecha', hace7)
+      .lte('fecha', hoy)
+    
+    // Agrupar por fecha
+    const porFecha = {}
+    for (let i = 0; i < 7; i++) {
+      const f = sumarDias(hoy, -i)
+      porFecha[f] = 0
+    }
+    if (data) {
+      data.forEach(c => {
+        if (porFecha[c.fecha] !== undefined) {
+          porFecha[c.fecha] += (c.calorias || 0)
+        }
+      })
+    }
+    
+    const arr = Object.entries(porFecha)
+      .map(([fecha, calorias]) => ({ fecha, calorias }))
+      .sort((a, b) => b.fecha.localeCompare(a.fecha))
+    
+    setHistorial7Dias(arr)
   }
 
   const totalCal = comidas.reduce((s, c) => s + (c.calorias || 0), 0)
@@ -372,9 +499,6 @@ export default function Seguimiento({ perfil }) {
     cargarTodo()
   }
 
-  // ============================================================
-  // EDITAR METAS
-  // ============================================================
   function abrirModalMetas() {
     setMetasForm({
       calorias: metas.calorias,
@@ -409,7 +533,6 @@ export default function Seguimiento({ perfil }) {
     setTimeout(() => setMsg(''), 2000)
   }
 
-  // Verificar si los macros cuadran con las calorías
   const calMacros = (parseFloat(metasForm.proteinas) || 0) * 4 + 
                     (parseFloat(metasForm.carbohidratos) || 0) * 4 + 
                     (parseFloat(metasForm.grasas) || 0) * 9
@@ -421,19 +544,22 @@ export default function Seguimiento({ perfil }) {
     ? recientes.map(r => ({ ...r.alimento_data, fuente: r.alimento_data?.fuente || 'local' }))
     : resultados
 
+  const promedio7Dias = historial7Dias.length > 0 
+    ? Math.round(historial7Dias.reduce((s, d) => s + d.calorias, 0) / historial7Dias.filter(d => d.calorias > 0).length || 0)
+    : 0
+
   return (
     <div style={s.page}>
       <header style={s.header}>
         <button style={s.backBtn} onClick={() => navigate('/')}>← Volver</button>
         <div style={s.logo}>SEGUIMIENTO</div>
-        <div style={s.fechaWrap}>
-          {fecha !== hoy && <button style={s.hoyBtn} onClick={() => setFecha(hoy)}>HOY</button>}
-          <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={s.fechaInput} />
-        </div>
+        <div style={{ width: 80 }}></div>
       </header>
 
       <main style={s.main}>
         {msg && <div style={s.success}>{msg}</div>}
+
+        <DayNavigator fecha={fecha} setFecha={setFecha} />
 
         {tab === 'panel' && (
           <div>
@@ -547,8 +673,37 @@ export default function Seguimiento({ perfil }) {
         {tab === 'progreso' && (
           <div>
             <div style={s.card}>
-              <div style={s.cardTitle}>📊 Tu progreso</div>
-              <div style={{ fontSize: 13, color: '#666', marginBottom: 14 }}>Próximamente: gráficos de peso, calorías promedio, evolución de macros y más.</div>
+              <div style={s.cardTitle}>📊 Últimos 7 días</div>
+              <div style={{ marginBottom: 14, padding: '10px 14px', background: '#0d0d0d', borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>Promedio diario</span>
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#f5e642', letterSpacing: 1 }}>{promedio7Dias} kcal</span>
+                </div>
+              </div>
+              {historial7Dias.map(d => {
+                const { badge, texto } = formatearFecha(d.fecha)
+                const pct = metas.calorias > 0 ? (d.calorias / metas.calorias) * 100 : 0
+                const cumplio = d.calorias > 0 && d.calorias <= metas.calorias
+                return (
+                  <div key={d.fecha} style={s.weekDay} onClick={() => { setFecha(d.fecha); setTab('diario') }} >
+                    <div style={s.weekDayLeft}>
+                      <div style={s.weekDayName}>
+                        {badge && <span style={{ color: '#f5e642', marginRight: 6, fontSize: 10, fontWeight: 700 }}>{badge}</span>}
+                        {texto}
+                      </div>
+                      {d.calorias > 0 && (
+                        <div style={{ ...s.macroBarBg, marginTop: 6, width: 120 }}>
+                          <div style={s.macroBarFill(cumplio ? '#4ade80' : '#f5e642', pct)} />
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ ...s.weekDayCal, color: d.calorias === 0 ? '#444' : (d.calorias > metas.calorias ? '#ff4d4d' : '#f5e642') }}>
+                      {Math.round(d.calorias)} <span style={{ fontSize: 11, color: '#444' }}>kcal</span>
+                    </div>
+                  </div>
+                )
+              })}
+              <div style={{ fontSize: 11, color: '#444', marginTop: 12, textAlign: 'center', fontStyle: 'italic' }}>Tocá un día para ver el detalle</div>
             </div>
 
             <div style={s.card}>
@@ -563,7 +718,7 @@ export default function Seguimiento({ perfil }) {
                       <div style={s.detailValue}>{r.peso} kg
                         {diff !== null && <span style={{ marginLeft: 8, fontSize: 12, color: diff < 0 ? '#4ade80' : diff > 0 ? '#ff4d4d' : '#555' }}>{diff > 0 ? '+' : ''}{diff.toFixed(1)} kg</span>}
                       </div>
-                      <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                      <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{formatearLargo(r.fecha)}</div>
                     </div>
                   </div>
                 )
@@ -573,7 +728,7 @@ export default function Seguimiento({ perfil }) {
             <div style={s.card}>
               <div style={s.cardTitle}>🏋️ Entrenamientos del día</div>
               {ejercicios.length === 0 ? (
-                <div style={{ color: '#444', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No hay ejercicios hoy. Tocá el "+" para agregar.</div>
+                <div style={{ color: '#444', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No hay ejercicios. Tocá el "+" para agregar.</div>
               ) : ejercicios.map((e, i) => (
                 <div key={e.id} style={s.detailRow}>
                   <div style={{ flex: 1 }}>
@@ -663,7 +818,7 @@ export default function Seguimiento({ perfil }) {
           </div>
           <div style={s.searchResults}>
             {buscando && <div style={s.loader}>🔍 Buscando...</div>}
-            {!buscando && searchTab === 'todo' && busqueda.length < 2 && <div style={s.empty}>Escribí al menos 2 letras para buscar.<br/><br/>Tip: probá "papa", "queso", "alfajor"...</div>}
+            {!buscando && searchTab === 'todo' && busqueda.length < 2 && <div style={s.empty}>Escribí al menos 2 letras para buscar.</div>}
             {!buscando && searchTab === 'recientes' && recientes.length === 0 && <div style={s.empty}>Todavía no usaste alimentos.<br/>Buscá uno y aparecerán acá.</div>}
             {!buscando && resultadosVisibles.length === 0 && busqueda.length >= 2 && searchTab === 'todo' && <div style={s.empty}>No se encontraron alimentos.<br/>Probá otro término.</div>}
             
@@ -699,14 +854,7 @@ export default function Seguimiento({ perfil }) {
 
             <label style={s.label}>Cantidad y porción</label>
             <div style={s.porcionRow}>
-              <input
-                style={s.porcionInput}
-                type="number"
-                step="0.1"
-                value={gramos}
-                onChange={e => setGramos(e.target.value)}
-                placeholder="100"
-              />
+              <input style={s.porcionInput} type="number" step="0.1" value={gramos} onChange={e => setGramos(e.target.value)} placeholder="100" />
               <select style={s.porcionSelect} value={tipoPorcion} onChange={e => setTipoPorcion(e.target.value)}>
                 <option value="100g">por 100g</option>
                 <option value="gramos">gramos</option>
@@ -729,22 +877,10 @@ export default function Seguimiento({ perfil }) {
               <div style={s.porcionPreview}>
                 <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Para {Math.round(calcularGramosFinal())}g</div>
                 <div style={s.porcionMacros}>
-                  <div>
-                    <div style={{ ...s.porcionMacro, color: '#f5e642' }}>{macrosPreview.calorias}</div>
-                    <div style={s.porcionMacroLabel}>kcal</div>
-                  </div>
-                  <div>
-                    <div style={{ ...s.porcionMacro, color: '#4ade80' }}>{macrosPreview.proteinas}g</div>
-                    <div style={s.porcionMacroLabel}>prot</div>
-                  </div>
-                  <div>
-                    <div style={{ ...s.porcionMacro, color: '#f5e642' }}>{macrosPreview.carbohidratos}g</div>
-                    <div style={s.porcionMacroLabel}>carb</div>
-                  </div>
-                  <div>
-                    <div style={{ ...s.porcionMacro, color: '#f97316' }}>{macrosPreview.grasas}g</div>
-                    <div style={s.porcionMacroLabel}>gras</div>
-                  </div>
+                  <div><div style={{ ...s.porcionMacro, color: '#f5e642' }}>{macrosPreview.calorias}</div><div style={s.porcionMacroLabel}>kcal</div></div>
+                  <div><div style={{ ...s.porcionMacro, color: '#4ade80' }}>{macrosPreview.proteinas}g</div><div style={s.porcionMacroLabel}>prot</div></div>
+                  <div><div style={{ ...s.porcionMacro, color: '#f5e642' }}>{macrosPreview.carbohidratos}g</div><div style={s.porcionMacroLabel}>carb</div></div>
+                  <div><div style={{ ...s.porcionMacro, color: '#f97316' }}>{macrosPreview.grasas}g</div><div style={s.porcionMacroLabel}>gras</div></div>
                 </div>
               </div>
             )}
@@ -778,18 +914,9 @@ export default function Seguimiento({ perfil }) {
             <label style={s.label}>Ejercicio</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} value={ejercicioInput.ejercicio} onChange={e => setEjercicioInput({ ...ejercicioInput, ejercicio: e.target.value })} placeholder="Ej: Sentadilla" autoFocus />
             <div style={s.porcionRow}>
-              <div style={{ flex: 1 }}>
-                <label style={s.label}>Series</label>
-                <input style={s.porcionInput} type="number" value={ejercicioInput.series} onChange={e => setEjercicioInput({ ...ejercicioInput, series: e.target.value })} placeholder="4" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={s.label}>Reps</label>
-                <input style={s.porcionInput} type="number" value={ejercicioInput.repeticiones} onChange={e => setEjercicioInput({ ...ejercicioInput, repeticiones: e.target.value })} placeholder="10" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={s.label}>Peso (kg)</label>
-                <input style={s.porcionInput} type="number" value={ejercicioInput.peso_kg} onChange={e => setEjercicioInput({ ...ejercicioInput, peso_kg: e.target.value })} placeholder="60" />
-              </div>
+              <div style={{ flex: 1 }}><label style={s.label}>Series</label><input style={s.porcionInput} type="number" value={ejercicioInput.series} onChange={e => setEjercicioInput({ ...ejercicioInput, series: e.target.value })} placeholder="4" /></div>
+              <div style={{ flex: 1 }}><label style={s.label}>Reps</label><input style={s.porcionInput} type="number" value={ejercicioInput.repeticiones} onChange={e => setEjercicioInput({ ...ejercicioInput, repeticiones: e.target.value })} placeholder="10" /></div>
+              <div style={{ flex: 1 }}><label style={s.label}>Peso (kg)</label><input style={s.porcionInput} type="number" value={ejercicioInput.peso_kg} onChange={e => setEjercicioInput({ ...ejercicioInput, peso_kg: e.target.value })} placeholder="60" /></div>
             </div>
             <label style={s.label}>Notas</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} value={ejercicioInput.notas} onChange={e => setEjercicioInput({ ...ejercicioInput, notas: e.target.value })} placeholder="opcional..." />
@@ -805,21 +932,15 @@ export default function Seguimiento({ perfil }) {
               <div style={s.porcionNombre}>🎯 Editar mis metas diarias</div>
               <button style={s.searchClose} onClick={() => setShowMetasModal(false)}>✕</button>
             </div>
-            
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 14 }}>Tu coach te puede pasar estos valores. Si no los sabés, usá la calculadora del Tab Más.</div>
-
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 14 }}>Tu coach te puede pasar estos valores.</div>
             <label style={s.label}>🔥 Calorías (kcal)</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.calorias} onChange={e => setMetasForm({ ...metasForm, calorias: e.target.value })} placeholder="2000" />
-
             <label style={s.label}>🥩 Proteínas (g)</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.proteinas} onChange={e => setMetasForm({ ...metasForm, proteinas: e.target.value })} placeholder="150" />
-
             <label style={s.label}>🍚 Carbohidratos (g)</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.carbohidratos} onChange={e => setMetasForm({ ...metasForm, carbohidratos: e.target.value })} placeholder="200" />
-
             <label style={s.label}>🥑 Grasas (g)</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.grasas} onChange={e => setMetasForm({ ...metasForm, grasas: e.target.value })} placeholder="65" />
-
             {metasForm.calorias && (
               <div style={s.metaCheck(macrosOk)}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -835,11 +956,7 @@ export default function Seguimiento({ perfil }) {
                 </div>
               </div>
             )}
-
-            <button 
-              style={{ ...s.btn, opacity: macrosOk ? 1 : 0.5, cursor: macrosOk ? 'pointer' : 'not-allowed' }} 
-              onClick={() => { if (macrosOk) guardarMetas() }}
-            >
+            <button style={{ ...s.btn, opacity: macrosOk ? 1 : 0.5, cursor: macrosOk ? 'pointer' : 'not-allowed' }} onClick={() => { if (macrosOk) guardarMetas() }}>
               {macrosOk ? 'Guardar metas' : 'Ajustá los macros para guardar'}
             </button>
           </div>
