@@ -4,10 +4,12 @@ import { supabase } from '../lib/supabase'
 
 const s = {
   page: { minHeight: '100vh', background: '#0a0a0a', fontFamily: "'DM Sans', sans-serif", paddingBottom: 80 },
-  header: { background: '#111', borderBottom: '1px solid #222', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 },
+  header: { background: '#111', borderBottom: '1px solid #222', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, gap: 8 },
   logo: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, letterSpacing: 2, color: '#f5e642' },
   backBtn: { background: 'none', border: '1px solid #222', color: '#888', borderRadius: 8, padding: '6px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' },
+  fechaWrap: { display: 'flex', gap: 6, alignItems: 'center' },
   fechaInput: { background: '#1a1a1a', border: '1px solid #222', borderRadius: 8, color: '#888', fontSize: 13, padding: '6px 12px', outline: 'none', fontFamily: 'inherit' },
+  hoyBtn: { background: '#1a1a1a', border: '1px solid #f5e64240', borderRadius: 8, color: '#f5e642', fontSize: 12, padding: '6px 10px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 },
   main: { maxWidth: 720, margin: '0 auto', padding: '20px 16px' },
   bottomTabs: { position: 'fixed', bottom: 0, left: 0, right: 0, background: '#111', borderTop: '1px solid #222', display: 'flex', justifyContent: 'space-around', padding: '10px 0 12px', zIndex: 90 },
   bottomTab: (a) => ({ background: 'none', border: 'none', color: a ? '#f5e642' : '#666', fontFamily: 'inherit', fontSize: 11, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '4px 16px', fontWeight: a ? 700 : 500 }),
@@ -65,7 +67,7 @@ const s = {
   porcionMacro: { fontSize: 18, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 },
   porcionMacroLabel: { fontSize: 9, color: '#555', marginTop: 2 },
   btn: { background: '#f5e642', color: '#000', border: 'none', borderRadius: 8, padding: '14px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%' },
-  btnSm: { background: '#1a1a1a', color: '#888', border: '1px solid #222', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' },
+  btnSm: { background: '#1a1a1a', color: '#f5e642', border: '1px solid #f5e64240', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 },
   btnDanger: { background: 'rgba(255,77,77,0.1)', color: '#ff4d4d', border: '1px solid rgba(255,77,77,0.2)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' },
   label: { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#555', marginBottom: 6 },
   input: { width: '100%', background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, color: '#f0f0f0', fontFamily: 'inherit', fontSize: 14, padding: '10px 14px', outline: 'none', boxSizing: 'border-box' },
@@ -76,6 +78,7 @@ const s = {
   agua: { display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12, justifyContent: 'center' },
   vaso: (lleno) => ({ width: 50, height: 50, borderRadius: 10, border: `2px solid ${lleno ? '#60a5fa' : '#222'}`, background: lleno ? 'rgba(96,165,250,0.2)' : 'transparent', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }),
   success: { color: '#4ade80', fontSize: 13, marginBottom: 10, padding: '10px 14px', background: 'rgba(74,222,128,0.05)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8 },
+  metaCheck: (ok) => ({ background: ok ? 'rgba(74,222,128,0.05)' : 'rgba(255,77,77,0.05)', border: `1px solid ${ok ? '#4ade8040' : '#ff4d4d40'}`, borderRadius: 8, padding: '12px 14px', marginBottom: 14, fontSize: 12 }),
 }
 
 const MOMENTOS = [
@@ -121,7 +124,8 @@ function CalorieCircle({ consumidas, meta }) {
 export default function Seguimiento({ perfil }) {
   const navigate = useNavigate()
   const [tab, setTab] = useState('panel')
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
+  const hoy = new Date().toISOString().split('T')[0]
+  const [fecha, setFecha] = useState(hoy)
   const [msg, setMsg] = useState('')
   const [registrosPeso, setRegistrosPeso] = useState([])
   const [vasosHoy, setVasosHoy] = useState(0)
@@ -141,8 +145,10 @@ export default function Seguimiento({ perfil }) {
   const [tipoPorcion, setTipoPorcion] = useState('100g')
   const [showPesoModal, setShowPesoModal] = useState(false)
   const [showEjercicioModal, setShowEjercicioModal] = useState(false)
+  const [showMetasModal, setShowMetasModal] = useState(false)
   const [pesoInput, setPesoInput] = useState('')
   const [ejercicioInput, setEjercicioInput] = useState({ ejercicio: '', series: '', repeticiones: '', peso_kg: '', notas: '' })
+  const [metasForm, setMetasForm] = useState({ calorias: '', proteinas: '', carbohidratos: '', grasas: '' })
   
   const META_AGUA = 8
   const timeoutRef = useRef(null)
@@ -173,9 +179,6 @@ export default function Seguimiento({ perfil }) {
   const totalGras = comidas.reduce((s, c) => s + (c.grasas || 0), 0)
   const ultimoPeso = registrosPeso[0]?.peso
 
-  // ============================================================
-  // BÚSQUEDA - Local primero (instantánea), OFF como bonus
-  // ============================================================
   async function buscarAlimento(q) {
     setBusqueda(q)
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -188,7 +191,6 @@ export default function Seguimiento({ perfil }) {
 
     setBuscando(true)
 
-    // 1. BÚSQUEDA LOCAL EN SUPABASE - Esto SIEMPRE funciona
     try {
       const { data: resLocalesDB, error } = await supabase
         .from('alimentos')
@@ -197,9 +199,7 @@ export default function Seguimiento({ perfil }) {
         .order('nombre')
         .limit(40)
       
-      if (error) {
-        console.error('Error Supabase:', error)
-      }
+      if (error) console.error('Error Supabase:', error)
       
       const resLocales = (resLocalesDB || []).map(a => ({ ...a, fuente: 'local' }))
       setResultados(resLocales)
@@ -210,7 +210,6 @@ export default function Seguimiento({ perfil }) {
       setBuscando(false)
     }
 
-    // 2. BÚSQUEDA OPEN FOOD FACTS - Bonus opcional
     timeoutRef.current = setTimeout(async () => {
       try {
         const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=20&lc=es`
@@ -245,13 +244,11 @@ export default function Seguimiento({ perfil }) {
           }))
           .slice(0, 15)
 
-        // Combinar con los locales que ya están
         setResultados(prev => {
           const sololocales = prev.filter(x => x.fuente === 'local')
           return [...sololocales, ...resAPI]
         })
       } catch (err) {
-        // Silenciar errores de OFF (CORS, network, etc) - no rompe la búsqueda local
         console.log('OFF no disponible:', err.message)
       }
     }, 500)
@@ -375,6 +372,51 @@ export default function Seguimiento({ perfil }) {
     cargarTodo()
   }
 
+  // ============================================================
+  // EDITAR METAS
+  // ============================================================
+  function abrirModalMetas() {
+    setMetasForm({
+      calorias: metas.calorias,
+      proteinas: metas.proteinas,
+      carbohidratos: metas.carbohidratos,
+      grasas: metas.grasas
+    })
+    setShowMetasModal(true)
+  }
+
+  async function guardarMetas() {
+    const nuevas = {
+      alumno_id: perfil.id,
+      calorias: parseFloat(metasForm.calorias) || 0,
+      proteinas: parseFloat(metasForm.proteinas) || 0,
+      carbohidratos: parseFloat(metasForm.carbohidratos) || 0,
+      grasas: parseFloat(metasForm.grasas) || 0
+    }
+    
+    const { data: existing } = await supabase.from('metas_nutricionales').select('*').eq('alumno_id', perfil.id).maybeSingle()
+    
+    if (existing) {
+      await supabase.from('metas_nutricionales').update(nuevas).eq('alumno_id', perfil.id)
+    } else {
+      await supabase.from('metas_nutricionales').insert(nuevas)
+    }
+    
+    setMetas(nuevas)
+    setShowMetasModal(false)
+    setMsg('Metas actualizadas ✓')
+    cargarTodo()
+    setTimeout(() => setMsg(''), 2000)
+  }
+
+  // Verificar si los macros cuadran con las calorías
+  const calMacros = (parseFloat(metasForm.proteinas) || 0) * 4 + 
+                    (parseFloat(metasForm.carbohidratos) || 0) * 4 + 
+                    (parseFloat(metasForm.grasas) || 0) * 9
+  const calObjetivo = parseFloat(metasForm.calorias) || 0
+  const diff = Math.round(calMacros - calObjetivo)
+  const macrosOk = Math.abs(diff) <= 50
+
   const resultadosVisibles = searchTab === 'recientes' 
     ? recientes.map(r => ({ ...r.alimento_data, fuente: r.alimento_data?.fuente || 'local' }))
     : resultados
@@ -384,7 +426,10 @@ export default function Seguimiento({ perfil }) {
       <header style={s.header}>
         <button style={s.backBtn} onClick={() => navigate('/')}>← Volver</button>
         <div style={s.logo}>SEGUIMIENTO</div>
-        <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={s.fechaInput} />
+        <div style={s.fechaWrap}>
+          {fecha !== hoy && <button style={s.hoyBtn} onClick={() => setFecha(hoy)}>HOY</button>}
+          <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={s.fechaInput} />
+        </div>
       </header>
 
       <main style={s.main}>
@@ -558,11 +603,14 @@ export default function Seguimiento({ perfil }) {
             </div>
 
             <div style={s.card}>
-              <div style={s.cardTitle}>🎯 Mis metas diarias</div>
-              <div style={s.detailRow}><span style={s.detailLabel}>Calorías</span><span style={s.detailValue}>{metas.calorias} kcal</span></div>
-              <div style={s.detailRow}><span style={s.detailLabel}>Proteínas</span><span style={s.detailValue}>{metas.proteinas} g</span></div>
-              <div style={s.detailRow}><span style={s.detailLabel}>Carbohidratos</span><span style={s.detailValue}>{metas.carbohidratos} g</span></div>
-              <div style={s.detailRow}><span style={s.detailLabel}>Grasas</span><span style={s.detailValue}>{metas.grasas} g</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <div style={{ ...s.cardTitle, marginBottom: 0 }}>🎯 Mis metas diarias</div>
+                <button style={s.btnSm} onClick={abrirModalMetas}>✏️ Editar</button>
+              </div>
+              <div style={s.detailRow}><span style={s.detailLabel}>🔥 Calorías</span><span style={s.detailValue}>{metas.calorias} kcal</span></div>
+              <div style={s.detailRow}><span style={s.detailLabel}>🥩 Proteínas</span><span style={s.detailValue}>{metas.proteinas} g</span></div>
+              <div style={s.detailRow}><span style={s.detailLabel}>🍚 Carbohidratos</span><span style={s.detailValue}>{metas.carbohidratos} g</span></div>
+              <div style={s.detailRow}><span style={s.detailLabel}>🥑 Grasas</span><span style={s.detailValue}>{metas.grasas} g</span></div>
             </div>
           </div>
         )}
@@ -577,6 +625,7 @@ export default function Seguimiento({ perfil }) {
             <button style={s.fabItem} onClick={() => { setFabOpen(false); abrirBuscador('Desayuno') }}>🔍 Buscar alimento</button>
             <button style={s.fabItem} onClick={() => { setFabOpen(false); setShowPesoModal(true) }}>⚖️ Registrar peso</button>
             <button style={s.fabItem} onClick={() => { setFabOpen(false); setShowEjercicioModal(true) }}>🏋️ Agregar ejercicio</button>
+            <button style={s.fabItem} onClick={() => { setFabOpen(false); abrirModalMetas() }}>🎯 Editar metas</button>
           </div>
         </>
       )}
@@ -745,6 +794,54 @@ export default function Seguimiento({ perfil }) {
             <label style={s.label}>Notas</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} value={ejercicioInput.notas} onChange={e => setEjercicioInput({ ...ejercicioInput, notas: e.target.value })} placeholder="opcional..." />
             <button style={s.btn} onClick={guardarEjercicio}>Guardar ejercicio</button>
+          </div>
+        </div>
+      )}
+
+      {showMetasModal && (
+        <div style={s.porcionModal} onClick={() => setShowMetasModal(false)}>
+          <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
+            <div style={s.porcionHeader}>
+              <div style={s.porcionNombre}>🎯 Editar mis metas diarias</div>
+              <button style={s.searchClose} onClick={() => setShowMetasModal(false)}>✕</button>
+            </div>
+            
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 14 }}>Tu coach te puede pasar estos valores. Si no los sabés, usá la calculadora del Tab Más.</div>
+
+            <label style={s.label}>🔥 Calorías (kcal)</label>
+            <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.calorias} onChange={e => setMetasForm({ ...metasForm, calorias: e.target.value })} placeholder="2000" />
+
+            <label style={s.label}>🥩 Proteínas (g)</label>
+            <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.proteinas} onChange={e => setMetasForm({ ...metasForm, proteinas: e.target.value })} placeholder="150" />
+
+            <label style={s.label}>🍚 Carbohidratos (g)</label>
+            <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.carbohidratos} onChange={e => setMetasForm({ ...metasForm, carbohidratos: e.target.value })} placeholder="200" />
+
+            <label style={s.label}>🥑 Grasas (g)</label>
+            <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.grasas} onChange={e => setMetasForm({ ...metasForm, grasas: e.target.value })} placeholder="65" />
+
+            {metasForm.calorias && (
+              <div style={s.metaCheck(macrosOk)}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ color: '#888' }}>Calorías de tus macros:</span>
+                  <span style={{ fontWeight: 700, color: macrosOk ? '#4ade80' : '#ff4d4d' }}>{Math.round(calMacros)} kcal</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ color: '#888' }}>Calorías objetivo:</span>
+                  <span style={{ fontWeight: 700, color: '#f5e642' }}>{calObjetivo} kcal</span>
+                </div>
+                <div style={{ color: macrosOk ? '#4ade80' : '#ff4d4d', fontSize: 11, fontWeight: 600 }}>
+                  {macrosOk ? '✅ Los macros cuadran con tus calorías' : `⚠️ Diferencia de ${diff > 0 ? '+' : ''}${diff} kcal`}
+                </div>
+              </div>
+            )}
+
+            <button 
+              style={{ ...s.btn, opacity: macrosOk ? 1 : 0.5, cursor: macrosOk ? 'pointer' : 'not-allowed' }} 
+              onClick={() => { if (macrosOk) guardarMetas() }}
+            >
+              {macrosOk ? 'Guardar metas' : 'Ajustá los macros para guardar'}
+            </button>
           </div>
         </div>
       )}
