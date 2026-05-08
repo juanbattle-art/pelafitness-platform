@@ -208,6 +208,7 @@ export default function Seguimiento({ perfil }) {
   const esAdminViendo = perfil.rol === 'admin' && alumnoIdParam
   const alumnoIdActual = esAdminViendo ? alumnoIdParam : alumnoIdActual
   const [alumnoNombre, setAlumnoNombre] = useState('')
+  const [fecha, setFecha] = useState(fechaHoy())
   const [vasosHoy, setVasosHoy] = useState(0)
   const [comidas, setComidas] = useState([])
   const [ejercicios, setEjercicios] = useState([])
