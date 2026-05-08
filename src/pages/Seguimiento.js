@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useNavigate } from 'react-router-dom'
+
 import { supabase } from '../lib/supabase'
 
 const s = {
@@ -203,10 +203,11 @@ function DayNavigator({ fecha, setFecha }) {
 // =================== COMPONENTE PRINCIPAL ===================
 export default function Seguimiento({ perfil }) {
   const navigate = useNavigate()
-  const [tab, setTab] = useState('panel')
-  const [fecha, setFecha] = useState(fechaHoy())
-  const [msg, setMsg] = useState('')
-  const [registrosPeso, setRegistrosPeso] = useState([])
+ const [searchParams] = useSearchParams()
+  const alumnoIdParam = searchParams.get('alumno')
+  const esAdminViendo = perfil.rol === 'admin' && alumnoIdParam
+  const alumnoIdActual = esAdminViendo ? alumnoIdParam : alumnoIdActual
+  const [alumnoNombre, setAlumnoNombre] = useState('')
   const [vasosHoy, setVasosHoy] = useState(0)
   const [comidas, setComidas] = useState([])
   const [ejercicios, setEjercicios] = useState([])
@@ -245,11 +246,18 @@ export default function Seguimiento({ perfil }) {
     return () => clearInterval(interval)
   }, [fecha, tab])
 
-  useEffect(() => { cargarTodo() }, [fecha])
-  useEffect(() => { cargarHistorial() }, [tab])
+ useEffect(() => {
+  if (esAdminViendo) {
+    supabase.from('profiles').select('nombre').eq('id', alumnoIdParam).single()
+      .then(({ data }) => { if (data) setAlumnoNombre(data.nombre) })
+  }
+}, [alumnoIdParam, esAdminViendo])
+
+useEffect(() => { cargarTodo() }, [fecha, alumnoIdActual])
+  useEffect(() => { cargarHistorial() }, [tab, alumnoIdActual])
 
   async function cargarTodo() {
-    const id = perfil.id
+    const id = alumnoIdActual
     const [{ data: p }, { data: a }, { data: c }, { data: e }, { data: m }, { data: rec }] = await Promise.all([
       supabase.from('registros_peso').select('*').eq('alumno_id', id).order('fecha', { ascending: false }).limit(20),
       supabase.from('registros_agua').select('*').eq('alumno_id', id).eq('fecha', fecha).maybeSingle(),
@@ -269,7 +277,7 @@ export default function Seguimiento({ perfil }) {
   // Carga el resumen de los últimos 7 días para el Tab Progreso
   async function cargarHistorial() {
     if (tab !== 'progreso') return
-    const id = perfil.id
+    const id =alumnoIdActual
     const hoy = fechaHoy()
     const hace7 = sumarDias(hoy, -6)
     
@@ -424,7 +432,7 @@ export default function Seguimiento({ perfil }) {
     const nombreCompleto = `${alimentoSel.nombre}${alimentoSel.marca ? ` (${alimentoSel.marca})` : ''} - ${gFinal}g`
     
     await supabase.from('registros_comidas').insert({
-      alumno_id: perfil.id, 
+      alumno_id: alumnoIdActual, 
       fecha, 
       momento: searchMomento,
       nombre_manual: nombreCompleto,
@@ -437,7 +445,7 @@ export default function Seguimiento({ perfil }) {
 
     try {
       await supabase.from('alimentos_recientes').insert({
-        alumno_id: perfil.id,
+        alumno_id: alumnoIdActual,
         alimento_data: alimentoSel,
         ultima_vez: new Date().toISOString()
       })
@@ -459,18 +467,18 @@ export default function Seguimiento({ perfil }) {
 
   async function toggleVaso(i) {
     const nuevos = i + 1 === vasosHoy ? i : i + 1
-    const { data: existing } = await supabase.from('registros_agua').select('*').eq('alumno_id', perfil.id).eq('fecha', fecha).maybeSingle()
+    const { data: existing } = await supabase.from('registros_agua').select('*').eq('alumno_id', alumnoIdActual).eq('fecha', fecha).maybeSingle()
     if (existing) {
       await supabase.from('registros_agua').update({ vasos: nuevos }).eq('id', existing.id)
     } else {
-      await supabase.from('registros_agua').insert({ alumno_id: perfil.id, vasos: nuevos, fecha })
+      await supabase.from('registros_agua').insert({ alumno_id: alumnoIdActual, vasos: nuevos, fecha })
     }
     setVasosHoy(nuevos)
   }
 
   async function guardarPeso() {
     if (!pesoInput) return
-    await supabase.from('registros_peso').insert({ alumno_id: perfil.id, peso: parseFloat(pesoInput), fecha })
+    await supabase.from('registros_peso').insert({ alumno_id: alumnoIdActual, peso: parseFloat(pesoInput), fecha })
     setPesoInput('')
     setShowPesoModal(false)
     setMsg('Peso guardado ✓')
@@ -481,7 +489,7 @@ export default function Seguimiento({ perfil }) {
   async function guardarEjercicio() {
     if (!ejercicioInput.ejercicio) return
     await supabase.from('registros_entrenamiento').insert({ 
-      alumno_id: perfil.id, fecha, 
+      alumno_id: alumnoIdActual, fecha, 
       ejercicio: ejercicioInput.ejercicio,
       series: parseInt(ejercicioInput.series) || 0,
       repeticiones: parseInt(ejercicioInput.repeticiones) || 0,
@@ -512,17 +520,17 @@ export default function Seguimiento({ perfil }) {
 
   async function guardarMetas() {
     const nuevas = {
-      alumno_id: perfil.id,
+      alumno_id: alumnoIdActual,
       calorias: parseFloat(metasForm.calorias) || 0,
       proteinas: parseFloat(metasForm.proteinas) || 0,
       carbohidratos: parseFloat(metasForm.carbohidratos) || 0,
       grasas: parseFloat(metasForm.grasas) || 0
     }
     
-    const { data: existing } = await supabase.from('metas_nutricionales').select('*').eq('alumno_id', perfil.id).maybeSingle()
+    const { data: existing } = await supabase.from('metas_nutricionales').select('*').eq('alumno_id', alumnoIdActual).maybeSingle()
     
     if (existing) {
-      await supabase.from('metas_nutricionales').update(nuevas).eq('alumno_id', perfil.id)
+      await supabase.from('metas_nutricionales').update(nuevas).eq('alumno_id', alumnoIdActual)
     } else {
       await supabase.from('metas_nutricionales').insert(nuevas)
     }
@@ -552,7 +560,7 @@ export default function Seguimiento({ perfil }) {
   return (
     <div style={s.page}>
       <header style={s.header}>
-        <button style={s.backBtn} onClick={() => navigate('/')}>← Volver</button>
+        <button style={s.backBtn} onClick={() => navigate(esAdminViendo ? '/mis-alumnos' : '/')}>← Volver</button>
         <div style={s.logo}>SEGUIMIENTO</div>
         <div style={{ width: 80 }}></div>
       </header>
