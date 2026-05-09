@@ -193,7 +193,15 @@ export default function MisAlumnos({ perfil }) {
                   {st.ultimoPeso && <span style={s.statBadge}>⚖️ {st.ultimoPeso}kg</span>}
                 </div>
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); navigate(`/plan-entrenamiento/${alumno.id}`) }}
+                style={{ background: 'rgba(245,230,66,0.15)', color: '#f5e642', border: '1px solid #f5e64240', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+              >
+                🏋️ Plan
+              </button>
               <div style={s.arrow}>→</div>
+            </div>
             </div>
           )
         })}
