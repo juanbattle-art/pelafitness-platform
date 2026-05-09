@@ -7,6 +7,8 @@ import Admin from './pages/Admin'
 import Programa from './pages/Programa'
 import Seguimiento from './pages/Seguimiento'
 import MisAlumnos from './pages/MisAlumnos'
+import PlanEntrenamiento from './pages/PlanEntrenamiento'
+import MiEntrenamiento from './pages/MiEntrenamiento'
 const ADMIN_EMAIL = 'juanbattle@hotmail.com'
 
 export default function App() {
@@ -58,6 +60,8 @@ export default function App() {
         <Route path="/" element={session ? (perfil?.rol === 'admin' ? <Navigate to="/admin" /> : <Dashboard perfil={perfil} />) : <Navigate to="/login" />} />
         <Route path="/admin" element={session && perfil?.rol === 'admin' ? <Admin perfil={perfil} /> : <Navigate to="/" />} />
         <Route path="/programa/:id" element={session ? <Programa perfil={perfil} /> : <Navigate to="/login" />} />
+        <Route path="/plan-entrenamiento/:alumnoId" element={session && perfil?.rol === 'admin' ? <PlanEntrenamiento perfil={perfil} /> : <Navigate to="/" />} />
+            <Route path="/mi-entrenamiento" element={session ? <MiEntrenamiento perfil={perfil} /> : <Navigate to="/login" />} />
         <Route path="/seguimiento" element={session ? <Seguimiento perfil={perfil} /> : <Navigate to="/login" />} />
         <Route path="/mis-alumnos" element={session && perfil?.rol === 'admin' ? <MisAlumnos perfil={perfil} /> : <Navigate to="/" />} />                      
       </Routes>
