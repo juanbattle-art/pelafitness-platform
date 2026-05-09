@@ -648,6 +648,8 @@ export default function Seguimiento({ perfil }) {
                 🏋️ MI ENTRENAMIENTO →
               </button>
             )}
+     
+            )}
             <div style={s.card}>
               <div style={s.cardTitle}>💧 Agua del día</div>
               <div style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>Meta: {META_AGUA} vasos (~2L). Tocá un vaso para registrarlo.</div>
