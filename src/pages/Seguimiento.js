@@ -623,6 +623,31 @@ export default function Seguimiento({ perfil }) {
 
         {tab === 'mas' && (
           <div>
+          {!esAdminViendo && (
+              <button 
+                onClick={() => navigate('/mi-entrenamiento')} 
+                style={{ 
+                  background: '#f5e642', 
+                  color: '#000', 
+                  border: 'none', 
+                  borderRadius: 12, 
+                  padding: '16px', 
+                  fontSize: 14, 
+                  fontWeight: 700, 
+                  cursor: 'pointer', 
+                  fontFamily: 'inherit', 
+                  width: '100%', 
+                  marginBottom: 14, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: 10, 
+                  boxShadow: '0 4px 16px rgba(245,230,66,0.3)' 
+                }}
+              >
+                🏋️ MI ENTRENAMIENTO →
+              </button>
+            )}
             <div style={s.card}>
               <div style={s.cardTitle}>💧 Agua del día</div>
               <div style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>Meta: {META_AGUA} vasos (~2L). Tocá un vaso para registrarlo.</div>
