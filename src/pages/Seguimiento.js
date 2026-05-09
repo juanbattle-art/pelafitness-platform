@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import EscanerBarras from '../components/EscanerBarras'
 
 const s = {
   page: { minHeight: '100vh', background: '#0a0a0a', fontFamily: "'DM Sans', sans-serif", paddingBottom: 80 },
@@ -47,8 +48,9 @@ const s = {
   comidaCal: { fontSize: 13, color: '#888', fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1, marginRight: 12 },
   agregarBtn: { width: '100%', padding: '14px', background: 'none', border: 'none', color: '#f5e642', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left', paddingLeft: 18 },
   searchModal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#0a0a0a', zIndex: 200, display: 'flex', flexDirection: 'column' },
-  searchHeader: { padding: '16px 20px', background: '#111', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', gap: 12 },
+  searchHeader: { padding: '16px 20px', background: '#111', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', gap: 8 },
   searchInput: { flex: 1, background: '#1a1a1a', border: '1px solid #222', borderRadius: 8, padding: '10px 14px', color: '#f0f0f0', fontSize: 14, outline: 'none', fontFamily: 'inherit' },
+  scanBtn: { background: 'rgba(245,230,66,0.15)', color: '#f5e642', border: '1px solid #f5e64240', borderRadius: 8, padding: '10px 14px', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
   searchClose: { background: 'none', border: 'none', color: '#888', fontSize: 24, cursor: 'pointer', padding: 4 },
   searchTabs: { display: 'flex', borderBottom: '1px solid #222', background: '#111' },
   searchTab: (a) => ({ flex: 1, padding: '12px', background: 'none', border: 'none', borderBottom: `2px solid ${a ? '#f5e642' : 'transparent'}`, color: a ? '#f5e642' : '#666', fontFamily: 'inherit', fontSize: 13, fontWeight: a ? 700 : 500, cursor: 'pointer' }),
@@ -66,17 +68,7 @@ const s = {
   porcionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #222' },
   porcionNombre: { fontSize: 16, fontWeight: 700, color: '#f0f0f0' },
   porcionMarca: { fontSize: 12, color: '#888', marginTop: 2 },
-  
-  // NUEVOS estilos para unidades
-  unidadOption: (selected) => ({
-    background: selected ? 'rgba(245,230,66,0.1)' : '#0d0d0d',
-    border: `1px solid ${selected ? '#f5e642' : '#222'}`,
-    borderRadius: 10,
-    padding: '12px 14px',
-    marginBottom: 8,
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  }),
+  unidadOption: (selected) => ({ background: selected ? 'rgba(245,230,66,0.1)' : '#0d0d0d', border: `1px solid ${selected ? '#f5e642' : '#222'}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8, cursor: 'pointer', transition: 'all 0.2s' }),
   unidadHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
   unidadNombre: { fontSize: 14, fontWeight: 600, color: '#f0f0f0', flex: 1 },
   unidadGramos: { fontSize: 11, color: '#666' },
@@ -86,7 +78,6 @@ const s = {
   cantidadRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 },
   cantidadArrow: { background: '#1a1a1a', border: '1px solid #f5e64240', borderRadius: 10, color: '#f5e642', fontSize: 22, width: 44, height: 44, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', userSelect: 'none' },
   cantidadInput: { width: 70, background: '#0a0a0a', border: '1px solid #f5e642', borderRadius: 10, padding: '10px', color: '#f5e642', fontSize: 22, textAlign: 'center', outline: 'none', fontFamily: "'Bebas Neue', sans-serif", fontWeight: 700 },
-  
   porcionInput: { flex: 1, background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, padding: '10px 14px', color: '#f0f0f0', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' },
   porcionSelect: { flex: 1.3, background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, padding: '10px 14px', color: '#f0f0f0', fontSize: 14, outline: 'none', fontFamily: 'inherit', appearance: 'none', boxSizing: 'border-box' },
   porcionPreview: { background: '#0d0d0d', border: '1px solid #f5e64240', borderRadius: 10, padding: 14, marginBottom: 14 },
@@ -121,20 +112,14 @@ const MOMENTOS = [
 
 function fechaHoy() {
   const d = new Date()
-  const año = d.getFullYear()
-  const mes = String(d.getMonth() + 1).padStart(2, '0')
-  const dia = String(d.getDate()).padStart(2, '0')
-  return `${año}-${mes}-${dia}`
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function sumarDias(fechaStr, dias) {
   const [año, mes, dia] = fechaStr.split('-').map(Number)
   const d = new Date(año, mes - 1, dia)
   d.setDate(d.getDate() + dias)
-  const a = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const di = String(d.getDate()).padStart(2, '0')
-  return `${a}-${m}-${di}`
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function formatearFecha(fechaStr) {
@@ -208,17 +193,15 @@ export default function Seguimiento({ perfil }) {
   const [metas, setMetas] = useState({ calorias: 2000, proteinas: 150, carbohidratos: 200, grasas: 65 })
   const [fabOpen, setFabOpen] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  const [showEscaner, setShowEscaner] = useState(false)
   const [searchMomento, setSearchMomento] = useState('Desayuno')
   const [busqueda, setBusqueda] = useState('')
   const [resultados, setResultados] = useState([])
   const [buscando, setBuscando] = useState(false)
   const [searchTab, setSearchTab] = useState('todo')
   const [alimentoSel, setAlimentoSel] = useState(null)
-  
-  // NUEVOS estados para unidades
-  const [unidadSel, setUnidadSel] = useState(null) // {nombre, gramos} o {nombre: 'gramos', gramos: 100}
+  const [unidadSel, setUnidadSel] = useState(null)
   const [cantidad, setCantidad] = useState(1)
-  
   const [showPesoModal, setShowPesoModal] = useState(false)
   const [showEjercicioModal, setShowEjercicioModal] = useState(false)
   const [showMetasModal, setShowMetasModal] = useState(false)
@@ -325,11 +308,64 @@ export default function Seguimiento({ perfil }) {
     }, 500)
   }
 
+  async function onScanBarcode(codigo) {
+    setShowEscaner(false)
+    setBuscando(true)
+    
+    // 1. Buscar primero en la base local
+    const { data: localData } = await supabase
+      .from('alimentos')
+      .select('*')
+      .eq('codigo_barras', codigo)
+      .maybeSingle()
+    
+    if (localData) {
+      seleccionarAlimento({ ...localData, fuente: 'local' })
+      setBuscando(false)
+      setMsg(`✅ Encontrado: ${localData.nombre}`)
+      setTimeout(() => setMsg(''), 2000)
+      return
+    }
+    
+    // 2. Si no está, buscar en Open Food Facts
+    try {
+      const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`
+      const response = await fetch(url)
+      const data = await response.json()
+      
+      if (data.status === 1 && data.product) {
+        const p = data.product
+        const alimento = {
+          id: `off-${codigo}`,
+          codigo_barras: codigo,
+          nombre: p.product_name || 'Producto sin nombre',
+          marca: p.brands || '',
+          imagen_url: p.image_small_url || p.image_url || null,
+          calorias: Math.round(p.nutriments?.['energy-kcal_100g'] || 0),
+          proteinas: parseFloat((p.nutriments?.['proteins_100g'] || 0).toFixed(1)),
+          carbohidratos: parseFloat((p.nutriments?.['carbohydrates_100g'] || 0).toFixed(1)),
+          grasas: parseFloat((p.nutriments?.['fat_100g'] || 0).toFixed(1)),
+          unidades: [],
+          fuente: 'openfoodfacts'
+        }
+        seleccionarAlimento(alimento)
+        setMsg(`✅ Encontrado online: ${alimento.nombre}`)
+        setTimeout(() => setMsg(''), 2000)
+      } else {
+        setMsg(`❌ Código ${codigo} no encontrado`)
+        setTimeout(() => setMsg(''), 3000)
+      }
+    } catch (err) {
+      setMsg('❌ Error al buscar producto')
+      setTimeout(() => setMsg(''), 3000)
+    }
+    setBuscando(false)
+  }
+
   function abrirBuscador(momento) { setSearchMomento(momento); setShowSearch(true); setBusqueda(''); setResultados([]); setSearchTab('todo') }
   
   function seleccionarAlimento(al) {
     setAlimentoSel(al)
-    // Si tiene unidades, seleccionar la primera. Sino, seleccionar por gramos por defecto
     if (al.unidades && Array.isArray(al.unidades) && al.unidades.length > 0) {
       setUnidadSel(al.unidades[0])
     } else {
@@ -348,7 +384,6 @@ export default function Seguimiento({ perfil }) {
     }
   }
 
-  // Calcular gramos finales según la unidad seleccionada y la cantidad
   function calcularGramosFinal() {
     if (!unidadSel) return 0
     const cant = parseFloat(cantidad) || 0
@@ -363,7 +398,6 @@ export default function Seguimiento({ perfil }) {
     const gFinal = calcularGramosFinal()
     if (gFinal <= 0) return
     const m = calcularPorGramos(alimentoSel, gFinal)
-    
     let nombreCompleto
     if (unidadSel.esGramos) {
       nombreCompleto = `${alimentoSel.nombre}${alimentoSel.marca ? ` (${alimentoSel.marca})` : ''} - ${gFinal}g`
@@ -372,17 +406,13 @@ export default function Seguimiento({ perfil }) {
       const cantStr = cant === 1 ? '' : `${cant}× `
       nombreCompleto = `${cantStr}${unidadSel.nombre} - ${alimentoSel.nombre}${alimentoSel.marca ? ` (${alimentoSel.marca})` : ''}`
     }
-    
     await supabase.from('registros_comidas').insert({
       alumno_id: alumnoIdActual, fecha, momento: searchMomento,
       nombre_manual: nombreCompleto,
       calorias: m.calorias, proteinas: m.proteinas, carbohidratos: m.carbohidratos, grasas: m.grasas, gramos: gFinal
     })
-    
     try { await supabase.from('alimentos_recientes').insert({ alumno_id: alumnoIdActual, alimento_data: alimentoSel, ultima_vez: new Date().toISOString() }) } catch(e) {}
-    setAlimentoSel(null)
-    setUnidadSel(null)
-    setCantidad(1)
+    setAlimentoSel(null); setUnidadSel(null); setCantidad(1)
     setShowSearch(false); setBusqueda(''); setResultados([])
     setMsg('Comida agregada ✓'); cargarTodo(); setTimeout(() => setMsg(''), 2000)
   }
@@ -443,7 +473,6 @@ export default function Seguimiento({ perfil }) {
   const resultadosVisibles = searchTab === 'recientes' ? recientes.map(r => ({ ...r.alimento_data, fuente: r.alimento_data?.fuente || 'local' })) : resultados
   const promedio7Dias = historial7Dias.length > 0 ? Math.round(historial7Dias.reduce((s, d) => s + d.calorias, 0) / historial7Dias.filter(d => d.calorias > 0).length || 0) : 0
 
-  // Lista de unidades disponibles para el alimento seleccionado (con fallback a por gramos)
   const unidadesDisponibles = alimentoSel?.unidades && Array.isArray(alimentoSel.unidades) && alimentoSel.unidades.length > 0
     ? [...alimentoSel.unidades, { nombre: 'Por gramos (escribir cantidad)', gramos: 100, esGramos: true }]
     : [{ nombre: 'Por gramos (escribir cantidad)', gramos: 100, esGramos: true }]
@@ -526,7 +555,6 @@ export default function Seguimiento({ perfil }) {
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 38, color: totalCal > metas.calorias ? '#ff4d4d' : '#f5e642', letterSpacing: 1, margin: '6px 0' }}>{Math.round(Math.max(0, metas.calorias - totalCal))}</div>
               <div style={{ fontSize: 12, color: '#666' }}><span style={{ color: '#888' }}>{metas.calorias}</span> objetivo − <span style={{ color: '#888' }}>{Math.round(totalCal)}</span> consumidas</div>
             </div>
-
             {MOMENTOS.map(mom => {
               const delMomento = comidas.filter(c => c.momento === mom.id)
               const calMomento = delMomento.reduce((s, c) => s + (c.calorias || 0), 0)
@@ -623,33 +651,15 @@ export default function Seguimiento({ perfil }) {
 
         {tab === 'mas' && (
           <div>
-          {!esAdminViendo && (
+            {!esAdminViendo && (
               <button 
                 onClick={() => navigate('/mi-entrenamiento')} 
-                style={{ 
-                  background: '#f5e642', 
-                  color: '#000', 
-                  border: 'none', 
-                  borderRadius: 12, 
-                  padding: '16px', 
-                  fontSize: 14, 
-                  fontWeight: 700, 
-                  cursor: 'pointer', 
-                  fontFamily: 'inherit', 
-                  width: '100%', 
-                  marginBottom: 14, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  gap: 10, 
-                  boxShadow: '0 4px 16px rgba(245,230,66,0.3)' 
-                }}
+                style={{ background: '#f5e642', color: '#000', border: 'none', borderRadius: 12, padding: '16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%', marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 4px 16px rgba(245,230,66,0.3)' }}
               >
                 🏋️ MI ENTRENAMIENTO →
               </button>
             )}
-     
-            )}
+
             <div style={s.card}>
               <div style={s.cardTitle}>💧 Agua del día</div>
               <div style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>Meta: {META_AGUA} vasos (~2L). Tocá un vaso para registrarlo.</div>
@@ -703,6 +713,13 @@ export default function Seguimiento({ perfil }) {
           <div style={s.searchHeader}>
             <button style={s.searchClose} onClick={() => { setShowSearch(false); setBusqueda(''); setResultados([]) }}>✕</button>
             <input autoFocus style={s.searchInput} value={busqueda} onChange={e => buscarAlimento(e.target.value)} placeholder={`Buscar para ${searchMomento}...`} />
+            <button 
+              onClick={() => setShowEscaner(true)} 
+              style={s.scanBtn}
+              title="Escanear código de barras"
+            >
+              📷
+            </button>
           </div>
           <div style={s.searchTabs}>
             <button style={s.searchTab(searchTab === 'todo')} onClick={() => setSearchTab('todo')}>Todo</button>
@@ -710,7 +727,7 @@ export default function Seguimiento({ perfil }) {
           </div>
           <div style={s.searchResults}>
             {buscando && <div style={s.loader}>🔍 Buscando...</div>}
-            {!buscando && searchTab === 'todo' && busqueda.length < 2 && <div style={s.empty}>Escribí al menos 2 letras para buscar.</div>}
+            {!buscando && searchTab === 'todo' && busqueda.length < 2 && <div style={s.empty}>Escribí al menos 2 letras o tocá 📷 para escanear.</div>}
             {!buscando && searchTab === 'recientes' && recientes.length === 0 && <div style={s.empty}>Todavía no usaste alimentos.<br/>Buscá uno y aparecerán acá.</div>}
             {!buscando && resultadosVisibles.length === 0 && busqueda.length >= 2 && searchTab === 'todo' && <div style={s.empty}>No se encontraron alimentos.<br/>Probá otro término.</div>}
             {resultadosVisibles.map(a => (
@@ -742,26 +759,15 @@ export default function Seguimiento({ perfil }) {
               </div>
               <button style={s.searchClose} onClick={() => { setAlimentoSel(null); setUnidadSel(null); setCantidad(1) }}>✕</button>
             </div>
-
-            {/* OPCIONES DE UNIDAD */}
             <label style={s.label}>Elegí una opción</label>
             {unidadesDisponibles.map((u, idx) => {
               const isSelected = unidadSel?.nombre === u.nombre
               const macrosUnidad = calcularPorGramos(alimentoSel, u.gramos)
               return (
-                <div 
-                  key={idx} 
-                  style={s.unidadOption(isSelected)}
-                  onClick={() => { setUnidadSel(u); setCantidad(1) }}
-                >
+                <div key={idx} style={s.unidadOption(isSelected)} onClick={() => { setUnidadSel(u); setCantidad(1) }}>
                   <div style={s.unidadHeader}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                      <div style={{ 
-                        width: 18, height: 18, borderRadius: '50%', 
-                        border: `2px solid ${isSelected ? '#f5e642' : '#444'}`,
-                        background: isSelected ? '#f5e642' : 'transparent',
-                        flexShrink: 0
-                      }}/>
+                      <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${isSelected ? '#f5e642' : '#444'}`, background: isSelected ? '#f5e642' : 'transparent', flexShrink: 0 }}/>
                       <div style={s.unidadNombre}>{u.nombre}</div>
                     </div>
                     {!u.esGramos && <div style={s.unidadGramos}>({u.gramos}g)</div>}
@@ -777,59 +783,23 @@ export default function Seguimiento({ perfil }) {
                 </div>
               )
             })}
-
-            {/* SELECTOR DE CANTIDAD */}
             {unidadSel && (
               <div style={s.cantidadBox}>
-                <div style={s.cantidadLabel}>
-                  {unidadSel.esGramos ? '📏 Gramos' : `Cantidad de "${unidadSel.nombre}"`}
-                </div>
+                <div style={s.cantidadLabel}>{unidadSel.esGramos ? '📏 Gramos' : `Cantidad de "${unidadSel.nombre}"`}</div>
                 <div style={s.cantidadRow}>
-                  <button 
-                    style={s.cantidadArrow}
-                    onClick={() => {
-                      const c = parseFloat(cantidad) || 0
-                      const min = unidadSel.esGramos ? 5 : 0.5
-                      const step = unidadSel.esGramos ? 5 : 0.5
-                      setCantidad(Math.max(min, c - step))
-                    }}
-                  >
-                    ◀
-                  </button>
-                  <input
-                    type="number"
-                    style={s.cantidadInput}
-                    value={cantidad}
-                    onChange={e => setCantidad(e.target.value)}
-                    step={unidadSel.esGramos ? 5 : 0.5}
-                    min={unidadSel.esGramos ? 1 : 0.5}
-                  />
-                  <button 
-                    style={s.cantidadArrow}
-                    onClick={() => {
-                      const c = parseFloat(cantidad) || 0
-                      const step = unidadSel.esGramos ? 5 : 0.5
-                      setCantidad(c + step)
-                    }}
-                  >
-                    ▶
-                  </button>
+                  <button style={s.cantidadArrow} onClick={() => { const c = parseFloat(cantidad) || 0; const min = unidadSel.esGramos ? 5 : 0.5; const step = unidadSel.esGramos ? 5 : 0.5; setCantidad(Math.max(min, c - step)) }}>◀</button>
+                  <input type="number" style={s.cantidadInput} value={cantidad} onChange={e => setCantidad(e.target.value)} step={unidadSel.esGramos ? 5 : 0.5} min={unidadSel.esGramos ? 1 : 0.5} />
+                  <button style={s.cantidadArrow} onClick={() => { const c = parseFloat(cantidad) || 0; const step = unidadSel.esGramos ? 5 : 0.5; setCantidad(c + step) }}>▶</button>
                 </div>
               </div>
             )}
-
-            {/* MOMENTO */}
             <label style={s.label}>Momento del día</label>
             <select style={{ ...s.porcionSelect, width: '100%', marginBottom: 14 }} value={searchMomento} onChange={e => setSearchMomento(e.target.value)}>
               {MOMENTOS.map(m => <option key={m.id} value={m.id}>{m.icono} {m.nombre}</option>)}
             </select>
-
-            {/* PREVIEW MACROS TOTAL */}
             {macrosPreview && gramosFinal > 0 && (
               <div style={s.porcionPreview}>
-                <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, textAlign: 'center' }}>
-                  Total ({Math.round(gramosFinal)}g)
-                </div>
+                <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, textAlign: 'center' }}>Total ({Math.round(gramosFinal)}g)</div>
                 <div style={s.porcionMacros}>
                   <div><div style={{ ...s.porcionMacro, color: '#f5e642' }}>{macrosPreview.calorias}</div><div style={s.porcionMacroLabel}>kcal</div></div>
                   <div><div style={{ ...s.porcionMacro, color: '#4ade80' }}>{macrosPreview.proteinas}g</div><div style={s.porcionMacroLabel}>prot</div></div>
@@ -838,7 +808,6 @@ export default function Seguimiento({ perfil }) {
                 </div>
               </div>
             )}
-
             <button style={s.btn} onClick={agregarComida}>Agregar a {searchMomento}</button>
           </div>
         </div>
@@ -915,6 +884,13 @@ export default function Seguimiento({ perfil }) {
             </button>
           </div>
         </div>
+      )}
+
+      {showEscaner && (
+        <EscanerBarras 
+          onScan={onScanBarcode}
+          onClose={() => setShowEscaner(false)}
+        />
       )}
     </div>
   )
