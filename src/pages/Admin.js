@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const s = {
@@ -34,6 +35,7 @@ const s = {
 const TIPOS = { entrenamiento: '#f5e642', nutricion: '#4ade80', mentalidad: '#818cf8' }
 
 export default function Admin({ perfil }) {
+  const navigate = useNavigate()
   const [tab, setTab] = useState('programas')
   const [programas, setProgramas] = useState([])
   const [alumnos, setAlumnos] = useState([])
@@ -126,6 +128,29 @@ export default function Admin({ perfil }) {
       </header>
 
       <main style={s.main}>
+  <button 
+          onClick={() => navigate('/mis-alumnos')} 
+          style={{ 
+            background: '#f5e642', 
+            color: '#000', 
+            border: 'none', 
+            borderRadius: 12, 
+            padding: '16px 24px', 
+            fontSize: 16, 
+            fontWeight: 700, 
+            cursor: 'pointer', 
+            fontFamily: 'inherit', 
+            width: '100%', 
+            marginBottom: 20, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: 12, 
+            boxShadow: '0 4px 16px rgba(245,230,66,0.3)' 
+          }}
+        >
+          👀 VER SEGUIMIENTO DE MIS ALUMNOS →
+        </button>
         <div style={s.tabs}>
           {['programas', 'modulos', 'alumnos', 'asignar', 'preguntas'].map(t => (
             <button key={t} style={s.tab(tab === t)} onClick={() => { setTab(t); setMsg('') }}>
