@@ -62,16 +62,36 @@ const s = {
   loader: { padding: '20px', textAlign: 'center', color: '#60a5fa', fontSize: 12 },
   empty: { padding: '40px 20px', textAlign: 'center', color: '#444', fontSize: 13 },
   porcionModal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 250, display: 'flex', alignItems: 'flex-end' },
-  porcionContent: { background: '#111', width: '100%', maxHeight: '85vh', borderRadius: '16px 16px 0 0', overflowY: 'auto', padding: '20px' },
+  porcionContent: { background: '#111', width: '100%', maxHeight: '90vh', borderRadius: '16px 16px 0 0', overflowY: 'auto', padding: '20px' },
   porcionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #222' },
   porcionNombre: { fontSize: 16, fontWeight: 700, color: '#f0f0f0' },
   porcionMarca: { fontSize: 12, color: '#888', marginTop: 2 },
-  porcionRow: { display: 'flex', gap: 10, marginBottom: 14 },
+  
+  // NUEVOS estilos para unidades
+  unidadOption: (selected) => ({
+    background: selected ? 'rgba(245,230,66,0.1)' : '#0d0d0d',
+    border: `1px solid ${selected ? '#f5e642' : '#222'}`,
+    borderRadius: 10,
+    padding: '12px 14px',
+    marginBottom: 8,
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  }),
+  unidadHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
+  unidadNombre: { fontSize: 14, fontWeight: 600, color: '#f0f0f0', flex: 1 },
+  unidadGramos: { fontSize: 11, color: '#666' },
+  unidadMacros: { fontSize: 11, color: '#999', marginTop: 4, display: 'flex', gap: 8, flexWrap: 'wrap' },
+  cantidadBox: { background: '#0d0d0d', border: '1px solid #222', borderRadius: 10, padding: 14, marginBottom: 14 },
+  cantidadLabel: { fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, textAlign: 'center' },
+  cantidadRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 },
+  cantidadArrow: { background: '#1a1a1a', border: '1px solid #f5e64240', borderRadius: 10, color: '#f5e642', fontSize: 22, width: 44, height: 44, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', userSelect: 'none' },
+  cantidadInput: { width: 70, background: '#0a0a0a', border: '1px solid #f5e642', borderRadius: 10, padding: '10px', color: '#f5e642', fontSize: 22, textAlign: 'center', outline: 'none', fontFamily: "'Bebas Neue', sans-serif", fontWeight: 700 },
+  
   porcionInput: { flex: 1, background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, padding: '10px 14px', color: '#f0f0f0', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' },
   porcionSelect: { flex: 1.3, background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, padding: '10px 14px', color: '#f0f0f0', fontSize: 14, outline: 'none', fontFamily: 'inherit', appearance: 'none', boxSizing: 'border-box' },
-  porcionPreview: { background: '#0d0d0d', border: '1px solid #222', borderRadius: 10, padding: 14, marginBottom: 14 },
+  porcionPreview: { background: '#0d0d0d', border: '1px solid #f5e64240', borderRadius: 10, padding: 14, marginBottom: 14 },
   porcionMacros: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' },
-  porcionMacro: { fontSize: 18, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 },
+  porcionMacro: { fontSize: 20, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 0.5 },
   porcionMacroLabel: { fontSize: 9, color: '#555', marginTop: 2 },
   btn: { background: '#f5e642', color: '#000', border: 'none', borderRadius: 8, padding: '14px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%' },
   btnSm: { background: '#1a1a1a', color: '#f5e642', border: '1px solid #f5e64240', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 },
@@ -194,8 +214,11 @@ export default function Seguimiento({ perfil }) {
   const [buscando, setBuscando] = useState(false)
   const [searchTab, setSearchTab] = useState('todo')
   const [alimentoSel, setAlimentoSel] = useState(null)
-  const [gramos, setGramos] = useState('100')
-  const [tipoPorcion, setTipoPorcion] = useState('100g')
+  
+  // NUEVOS estados para unidades
+  const [unidadSel, setUnidadSel] = useState(null) // {nombre, gramos} o {nombre: 'gramos', gramos: 100}
+  const [cantidad, setCantidad] = useState(1)
+  
   const [showPesoModal, setShowPesoModal] = useState(false)
   const [showEjercicioModal, setShowEjercicioModal] = useState(false)
   const [showMetasModal, setShowMetasModal] = useState(false)
@@ -294,7 +317,7 @@ export default function Seguimiento({ perfil }) {
           proteinas: parseFloat((p.nutriments['proteins_100g'] || 0).toFixed(1)),
           carbohidratos: parseFloat((p.nutriments['carbohydrates_100g'] || 0).toFixed(1)),
           grasas: parseFloat((p.nutriments['fat_100g'] || 0).toFixed(1)),
-          porciones: p.serving_size ? [{ nombre: p.serving_size, gramos: parseFloat(p.serving_quantity) || 100 }] : [],
+          unidades: [],
           fuente: 'openfoodfacts'
         })).slice(0, 15)
         setResultados(prev => { const sololocales = prev.filter(x => x.fuente === 'local'); return [...sololocales, ...resAPI] })
@@ -303,7 +326,17 @@ export default function Seguimiento({ perfil }) {
   }
 
   function abrirBuscador(momento) { setSearchMomento(momento); setShowSearch(true); setBusqueda(''); setResultados([]); setSearchTab('todo') }
-  function seleccionarAlimento(al) { setAlimentoSel(al); setGramos('100'); setTipoPorcion('100g') }
+  
+  function seleccionarAlimento(al) {
+    setAlimentoSel(al)
+    // Si tiene unidades, seleccionar la primera. Sino, seleccionar por gramos por defecto
+    if (al.unidades && Array.isArray(al.unidades) && al.unidades.length > 0) {
+      setUnidadSel(al.unidades[0])
+    } else {
+      setUnidadSel({ nombre: 'Por gramos', gramos: 100, esGramos: true })
+    }
+    setCantidad(1)
+  }
 
   function calcularPorGramos(al, g) {
     const factor = parseFloat(g) / 100
@@ -315,29 +348,42 @@ export default function Seguimiento({ perfil }) {
     }
   }
 
+  // Calcular gramos finales según la unidad seleccionada y la cantidad
   function calcularGramosFinal() {
-    if (tipoPorcion === '100g') return parseFloat(gramos) || 0
-    if (tipoPorcion === 'gramos') return parseFloat(gramos) || 0
-    const porcion = alimentoSel?.porciones?.find(p => p.nombre === tipoPorcion)
-    if (porcion) return (parseFloat(gramos) || 1) * porcion.gramos
-    const factores = { 'unidad': 100, 'taza': 240, 'cucharada': 15, 'cucharadita': 5 }
-    return (parseFloat(gramos) || 1) * (factores[tipoPorcion] || 100)
+    if (!unidadSel) return 0
+    const cant = parseFloat(cantidad) || 0
+    return unidadSel.gramos * cant
   }
 
-  const macrosPreview = alimentoSel ? calcularPorGramos(alimentoSel, calcularGramosFinal()) : null
+  const gramosFinal = calcularGramosFinal()
+  const macrosPreview = alimentoSel ? calcularPorGramos(alimentoSel, gramosFinal) : null
 
   async function agregarComida() {
-    if (!alimentoSel) return
+    if (!alimentoSel || !unidadSel) return
     const gFinal = calcularGramosFinal()
+    if (gFinal <= 0) return
     const m = calcularPorGramos(alimentoSel, gFinal)
-    const nombreCompleto = `${alimentoSel.nombre}${alimentoSel.marca ? ` (${alimentoSel.marca})` : ''} - ${gFinal}g`
+    
+    let nombreCompleto
+    if (unidadSel.esGramos) {
+      nombreCompleto = `${alimentoSel.nombre}${alimentoSel.marca ? ` (${alimentoSel.marca})` : ''} - ${gFinal}g`
+    } else {
+      const cant = parseFloat(cantidad) || 1
+      const cantStr = cant === 1 ? '' : `${cant}× `
+      nombreCompleto = `${cantStr}${unidadSel.nombre} - ${alimentoSel.nombre}${alimentoSel.marca ? ` (${alimentoSel.marca})` : ''}`
+    }
+    
     await supabase.from('registros_comidas').insert({
       alumno_id: alumnoIdActual, fecha, momento: searchMomento,
       nombre_manual: nombreCompleto,
       calorias: m.calorias, proteinas: m.proteinas, carbohidratos: m.carbohidratos, grasas: m.grasas, gramos: gFinal
     })
+    
     try { await supabase.from('alimentos_recientes').insert({ alumno_id: alumnoIdActual, alimento_data: alimentoSel, ultima_vez: new Date().toISOString() }) } catch(e) {}
-    setAlimentoSel(null); setShowSearch(false); setBusqueda(''); setResultados([])
+    setAlimentoSel(null)
+    setUnidadSel(null)
+    setCantidad(1)
+    setShowSearch(false); setBusqueda(''); setResultados([])
     setMsg('Comida agregada ✓'); cargarTodo(); setTimeout(() => setMsg(''), 2000)
   }
 
@@ -396,6 +442,11 @@ export default function Seguimiento({ perfil }) {
 
   const resultadosVisibles = searchTab === 'recientes' ? recientes.map(r => ({ ...r.alimento_data, fuente: r.alimento_data?.fuente || 'local' })) : resultados
   const promedio7Dias = historial7Dias.length > 0 ? Math.round(historial7Dias.reduce((s, d) => s + d.calorias, 0) / historial7Dias.filter(d => d.calorias > 0).length || 0) : 0
+
+  // Lista de unidades disponibles para el alimento seleccionado (con fallback a por gramos)
+  const unidadesDisponibles = alimentoSel?.unidades && Array.isArray(alimentoSel.unidades) && alimentoSel.unidades.length > 0
+    ? [...alimentoSel.unidades, { nombre: 'Por gramos (escribir cantidad)', gramos: 100, esGramos: true }]
+    : [{ nombre: 'Por gramos (escribir cantidad)', gramos: 100, esGramos: true }]
 
   return (
     <div style={s.page}>
@@ -655,35 +706,103 @@ export default function Seguimiento({ perfil }) {
       )}
 
       {alimentoSel && (
-        <div style={s.porcionModal} onClick={() => setAlimentoSel(null)}>
+        <div style={s.porcionModal} onClick={() => { setAlimentoSel(null); setUnidadSel(null); setCantidad(1) }}>
           <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
             <div style={s.porcionHeader}>
               <div>
                 <div style={s.porcionNombre}>{alimentoSel.nombre}</div>
                 {alimentoSel.marca && <div style={s.porcionMarca}>{alimentoSel.marca}</div>}
               </div>
-              <button style={s.searchClose} onClick={() => setAlimentoSel(null)}>✕</button>
+              <button style={s.searchClose} onClick={() => { setAlimentoSel(null); setUnidadSel(null); setCantidad(1) }}>✕</button>
             </div>
-            <label style={s.label}>Cantidad y porción</label>
-            <div style={s.porcionRow}>
-              <input style={s.porcionInput} type="number" step="0.1" value={gramos} onChange={e => setGramos(e.target.value)} placeholder="100" />
-              <select style={s.porcionSelect} value={tipoPorcion} onChange={e => setTipoPorcion(e.target.value)}>
-                <option value="100g">por 100g</option>
-                <option value="gramos">gramos</option>
-                <option value="unidad">unidad (~100g)</option>
-                <option value="taza">taza (240g)</option>
-                <option value="cucharada">cucharada (15g)</option>
-                <option value="cucharadita">cucharadita (5g)</option>
-                {alimentoSel.porciones && alimentoSel.porciones.map(p => (<option key={p.nombre} value={p.nombre}>{p.nombre} ({p.gramos}g)</option>))}
-              </select>
-            </div>
-            <label style={s.label}>Momento</label>
+
+            {/* OPCIONES DE UNIDAD */}
+            <label style={s.label}>Elegí una opción</label>
+            {unidadesDisponibles.map((u, idx) => {
+              const isSelected = unidadSel?.nombre === u.nombre
+              const macrosUnidad = calcularPorGramos(alimentoSel, u.gramos)
+              return (
+                <div 
+                  key={idx} 
+                  style={s.unidadOption(isSelected)}
+                  onClick={() => { setUnidadSel(u); setCantidad(1) }}
+                >
+                  <div style={s.unidadHeader}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                      <div style={{ 
+                        width: 18, height: 18, borderRadius: '50%', 
+                        border: `2px solid ${isSelected ? '#f5e642' : '#444'}`,
+                        background: isSelected ? '#f5e642' : 'transparent',
+                        flexShrink: 0
+                      }}/>
+                      <div style={s.unidadNombre}>{u.nombre}</div>
+                    </div>
+                    {!u.esGramos && <div style={s.unidadGramos}>({u.gramos}g)</div>}
+                  </div>
+                  {!u.esGramos && (
+                    <div style={s.unidadMacros}>
+                      <span>🔥 {macrosUnidad.calorias} kcal</span>
+                      <span style={{ color: '#4ade80' }}>P: {macrosUnidad.proteinas}g</span>
+                      <span style={{ color: '#f5e642' }}>C: {macrosUnidad.carbohidratos}g</span>
+                      <span style={{ color: '#f97316' }}>G: {macrosUnidad.grasas}g</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* SELECTOR DE CANTIDAD */}
+            {unidadSel && (
+              <div style={s.cantidadBox}>
+                <div style={s.cantidadLabel}>
+                  {unidadSel.esGramos ? '📏 Gramos' : `Cantidad de "${unidadSel.nombre}"`}
+                </div>
+                <div style={s.cantidadRow}>
+                  <button 
+                    style={s.cantidadArrow}
+                    onClick={() => {
+                      const c = parseFloat(cantidad) || 0
+                      const min = unidadSel.esGramos ? 5 : 0.5
+                      const step = unidadSel.esGramos ? 5 : 0.5
+                      setCantidad(Math.max(min, c - step))
+                    }}
+                  >
+                    ◀
+                  </button>
+                  <input
+                    type="number"
+                    style={s.cantidadInput}
+                    value={cantidad}
+                    onChange={e => setCantidad(e.target.value)}
+                    step={unidadSel.esGramos ? 5 : 0.5}
+                    min={unidadSel.esGramos ? 1 : 0.5}
+                  />
+                  <button 
+                    style={s.cantidadArrow}
+                    onClick={() => {
+                      const c = parseFloat(cantidad) || 0
+                      const step = unidadSel.esGramos ? 5 : 0.5
+                      setCantidad(c + step)
+                    }}
+                  >
+                    ▶
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* MOMENTO */}
+            <label style={s.label}>Momento del día</label>
             <select style={{ ...s.porcionSelect, width: '100%', marginBottom: 14 }} value={searchMomento} onChange={e => setSearchMomento(e.target.value)}>
               {MOMENTOS.map(m => <option key={m.id} value={m.id}>{m.icono} {m.nombre}</option>)}
             </select>
-            {macrosPreview && (
+
+            {/* PREVIEW MACROS TOTAL */}
+            {macrosPreview && gramosFinal > 0 && (
               <div style={s.porcionPreview}>
-                <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Para {Math.round(calcularGramosFinal())}g</div>
+                <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, textAlign: 'center' }}>
+                  Total ({Math.round(gramosFinal)}g)
+                </div>
                 <div style={s.porcionMacros}>
                   <div><div style={{ ...s.porcionMacro, color: '#f5e642' }}>{macrosPreview.calorias}</div><div style={s.porcionMacroLabel}>kcal</div></div>
                   <div><div style={{ ...s.porcionMacro, color: '#4ade80' }}>{macrosPreview.proteinas}g</div><div style={s.porcionMacroLabel}>prot</div></div>
@@ -692,6 +811,7 @@ export default function Seguimiento({ perfil }) {
                 </div>
               </div>
             )}
+
             <button style={s.btn} onClick={agregarComida}>Agregar a {searchMomento}</button>
           </div>
         </div>
@@ -720,7 +840,7 @@ export default function Seguimiento({ perfil }) {
             </div>
             <label style={s.label}>Ejercicio</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} value={ejercicioInput.ejercicio} onChange={e => setEjercicioInput({ ...ejercicioInput, ejercicio: e.target.value })} placeholder="Ej: Sentadilla" autoFocus />
-            <div style={s.porcionRow}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
               <div style={{ flex: 1 }}><label style={s.label}>Series</label><input style={s.porcionInput} type="number" value={ejercicioInput.series} onChange={e => setEjercicioInput({ ...ejercicioInput, series: e.target.value })} placeholder="4" /></div>
               <div style={{ flex: 1 }}><label style={s.label}>Reps</label><input style={s.porcionInput} type="number" value={ejercicioInput.repeticiones} onChange={e => setEjercicioInput({ ...ejercicioInput, repeticiones: e.target.value })} placeholder="10" /></div>
               <div style={{ flex: 1 }}><label style={s.label}>Peso (kg)</label><input style={s.porcionInput} type="number" value={ejercicioInput.peso_kg} onChange={e => setEjercicioInput({ ...ejercicioInput, peso_kg: e.target.value })} placeholder="60" /></div>
