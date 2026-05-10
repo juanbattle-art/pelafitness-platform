@@ -308,7 +308,7 @@ export default function Seguimiento({ perfil }) {
     }, 500)
   }
 
-  async function onScanBarcode(codigo) {
+ async function onScanBarcode(codigo) {
     setShowEscaner(false)
     setBuscando(true)
     
@@ -336,7 +336,6 @@ export default function Seguimiento({ perfil }) {
       if (data.status === 1 && data.product) {
         const p = data.product
         const alimento = {
-          id: `off-${codigo}`,
           codigo_barras: codigo,
           nombre: p.product_name || 'Producto sin nombre',
           marca: p.brands || '',
@@ -346,11 +345,37 @@ export default function Seguimiento({ perfil }) {
           carbohidratos: parseFloat((p.nutriments?.['carbohydrates_100g'] || 0).toFixed(1)),
           grasas: parseFloat((p.nutriments?.['fat_100g'] || 0).toFixed(1)),
           unidades: [],
-          fuente: 'openfoodfacts'
+          categoria: 'Escaneado',
+          pais: p.countries || 'Internacional',
+          popularidad: 1
         }
-        seleccionarAlimento(alimento)
-        setMsg(`✅ Encontrado online: ${alimento.nombre}`)
-        setTimeout(() => setMsg(''), 2000)
+        
+        // 🆕 GUARDAR EN BASE LOCAL para futuras búsquedas
+        const { data: insertado, error } = await supabase
+          .from('alimentos')
+          .insert(alimento)
+          .select()
+          .single()
+        
+        if (insertado) {
+          seleccionarAlimento({ ...insertado, fuente: 'local' })
+          setMsg(`✅ ${insertado.nombre} agregado a la base 🎉`)
+        } else {
+          const { data: existente } = await supabase
+            .from('alimentos')
+            .select('*')
+            .or(`codigo_barras.eq.${codigo},nombre.eq.${alimento.nombre}`)
+            .maybeSingle()
+          
+          if (existente) {
+            seleccionarAlimento({ ...existente, fuente: 'local' })
+            setMsg(`✅ Encontrado: ${existente.nombre}`)
+          } else {
+            seleccionarAlimento({ ...alimento, id: `off-${codigo}`, fuente: 'openfoodfacts' })
+            setMsg(`✅ ${alimento.nombre} cargado`)
+          }
+        }
+        setTimeout(() => setMsg(''), 2500)
       } else {
         setMsg(`❌ Código ${codigo} no encontrado`)
         setTimeout(() => setMsg(''), 3000)
