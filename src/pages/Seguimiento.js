@@ -220,7 +220,8 @@ export default function Seguimiento({ perfil }) {
     proteinas: '', 
     carbohidratos: '', 
     grasas: '',
-    imagen_url: ''
+    imagen_url: '',
+    unidades: []
   })
   
   const META_AGUA = 8
@@ -364,7 +365,8 @@ export default function Seguimiento({ perfil }) {
             proteinas: p.nutriments?.['proteins_100g'] ? parseFloat(p.nutriments['proteins_100g']).toFixed(1) : '',
             carbohidratos: p.nutriments?.['carbohydrates_100g'] ? parseFloat(p.nutriments['carbohydrates_100g']).toFixed(1) : '',
             grasas: p.nutriments?.['fat_100g'] ? parseFloat(p.nutriments['fat_100g']).toFixed(1) : '',
-            imagen_url: p.image_small_url || p.image_url || ''
+            imagen_url: p.image_small_url || p.image_url || '',
+            unidades: []
           })
           setShowCustomModal(true)
           setBuscando(false)
@@ -425,7 +427,8 @@ export default function Seguimiento({ perfil }) {
           proteinas: '',
           carbohidratos: '',
           grasas: '',
-          imagen_url: ''
+          imagen_url: '',
+          unidades: []
         })
         setShowCustomModal(true)
         setMsg('🆕 Producto nuevo. Cargá los datos.')
@@ -455,7 +458,10 @@ export default function Seguimiento({ perfil }) {
       proteinas: parseFloat(customForm.proteinas) || 0,
       carbohidratos: parseFloat(customForm.carbohidratos) || 0,
       grasas: parseFloat(customForm.grasas) || 0,
-      unidades: [],
+      unidades: (customForm.unidades || []).filter(u => u.nombre && u.gramos).map(u => ({
+        nombre: u.nombre.trim(),
+        gramos: parseFloat(u.gramos) || 100
+      })),
       categoria: 'Custom',
       pais: 'Argentina',
       popularidad: 1
@@ -1123,6 +1129,62 @@ export default function Seguimiento({ perfil }) {
                   placeholder="15"
                 />
               </div>
+            </div>
+            
+            {/* 🆕 UNIDADES OPCIONALES */}
+            <div style={{ background: '#0d0d0d', border: '1px solid #222', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+              <label style={{ ...s.label, marginBottom: 10 }}>📏 Unidades opcionales</label>
+              <div style={{ fontSize: 11, color: '#666', marginBottom: 12 }}>
+                Cargá unidades como "1 huevo", "1 paquete", "1 lata" con su peso en gramos. Si dejás vacío, solo se podrá agregar por gramos.
+              </div>
+              
+              {(customForm.unidades || []).map((u, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                  <input 
+                    style={{ ...s.porcionInput, flex: 2, fontSize: 13 }}
+                    placeholder="Nombre (ej: 1 huevo)"
+                    value={u.nombre || ''}
+                    onChange={e => {
+                      const nuevas = [...customForm.unidades]
+                      nuevas[idx] = { ...nuevas[idx], nombre: e.target.value }
+                      setCustomForm({ ...customForm, unidades: nuevas })
+                    }}
+                  />
+                  <input 
+                    style={{ ...s.porcionInput, width: 80, fontSize: 13, textAlign: 'center' }}
+                    type="number"
+                    placeholder="60"
+                    value={u.gramos || ''}
+                    onChange={e => {
+                      const nuevas = [...customForm.unidades]
+                      nuevas[idx] = { ...nuevas[idx], gramos: e.target.value }
+                      setCustomForm({ ...customForm, unidades: nuevas })
+                    }}
+                  />
+                  <span style={{ fontSize: 11, color: '#666' }}>g</span>
+                  <button 
+                    style={{ ...s.btnDanger, padding: '6px 10px', fontSize: 14 }}
+                    onClick={() => {
+                      const nuevas = customForm.unidades.filter((_, i) => i !== idx)
+                      setCustomForm({ ...customForm, unidades: nuevas })
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              
+              <button 
+                style={{ background: 'rgba(245,230,66,0.1)', color: '#f5e642', border: '1px dashed #f5e64240', borderRadius: 6, padding: '10px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', width: '100%', fontWeight: 700 }}
+                onClick={() => {
+                  setCustomForm({ 
+                    ...customForm, 
+                    unidades: [...(customForm.unidades || []), { nombre: '', gramos: '' }] 
+                  })
+                }}
+              >
+                + Agregar unidad
+              </button>
             </div>
             
             <button style={s.btn} onClick={guardarCustom}>
