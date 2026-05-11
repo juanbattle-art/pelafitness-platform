@@ -90,6 +90,28 @@ const s = {
     borderRadius: 12,
     pointerEvents: 'auto'
   },
+  // 🆕 Botón de flash
+  flashBtn: (activo) => ({
+    position: 'absolute',
+    bottom: 30,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: activo ? '#f5e642' : 'rgba(0,0,0,0.7)',
+    color: activo ? '#000' : '#f5e642',
+    border: `2px solid ${activo ? '#f5e642' : '#f5e64260'}`,
+    borderRadius: 50,
+    padding: '12px 24px',
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: "'DM Sans', sans-serif",
+    pointerEvents: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+    transition: 'all 0.2s'
+  }),
   error: { 
     color: '#ff4d4d', 
     fontSize: 13, 
@@ -99,21 +121,19 @@ const s = {
     borderRadius: 8, 
     margin: 20,
     fontFamily: "'DM Sans', sans-serif"
-  },
-  loadingState: {
-    color: '#f5e642',
-    fontSize: 14,
-    fontFamily: "'DM Sans', sans-serif",
-    textAlign: 'center',
-    padding: 40
   }
 }
 
 export default function EscanerBarras({ onScan, onClose }) {
   const videoRef = useRef(null)
   const codeReaderRef = useRef(null)
+  const streamRef = useRef(null)
   const [error, setError] = useState('')
   const [status, setStatus] = useState('Iniciando cámara...')
+  
+  // 🆕 Estado del flash
+  const [flashOn, setFlashOn] = useState(false)
+  const [flashSupported, setFlashSupported] = useState(false)
 
   useEffect(() => {
     const codeReader = new BrowserMultiFormatReader()
@@ -123,39 +143,49 @@ export default function EscanerBarras({ onScan, onClose }) {
       try {
         setStatus('🎬 Iniciando cámara...')
         
-        // Pedir permiso de cámara con la trasera preferida
         const constraints = {
           video: {
-            facingMode: { ideal: 'environment' } // cámara trasera si existe
+            facingMode: { ideal: 'environment' }
           }
         }
         
         const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        streamRef.current = stream
+        
         if (videoRef.current) {
           videoRef.current.srcObject = stream
           videoRef.current.setAttribute('playsinline', true)
           await videoRef.current.play()
         }
         
+        // 🆕 Verificar si el dispositivo soporta flash
+        const videoTrack = stream.getVideoTracks()[0]
+        if (videoTrack) {
+          const capabilities = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {}
+          if (capabilities.torch) {
+            setFlashSupported(true)
+          }
+        }
+        
         setStatus('🎯 Apuntá al código de barras')
         
-        // Empezar a escanear
         codeReader.decodeFromVideoDevice(undefined, videoRef.current, (result, err) => {
           if (result) {
-            // ¡Detectó un código!
             const codigo = result.getText()
             setStatus(`✅ Detectado: ${codigo}`)
             
-            // Vibrar si el dispositivo lo soporta
             if (navigator.vibrate) navigator.vibrate(200)
             
-            // Detener escáner y avisar al padre
+            // Apagar flash al detectar
+            if (flashOn && videoTrack) {
+              videoTrack.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {})
+            }
+            
             stream.getTracks().forEach(t => t.stop())
             codeReader.reset()
             
             setTimeout(() => onScan(codigo), 300)
           }
-          // Los errores frecuentes (no encontró código) los ignoramos
         })
       } catch (err) {
         console.error('Error escáner:', err)
@@ -171,18 +201,38 @@ export default function EscanerBarras({ onScan, onClose }) {
     
     iniciar()
     
-    // Cleanup: detener cámara al cerrar
     return () => {
       if (codeReaderRef.current) {
         codeReaderRef.current.reset()
       }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop())
+      }
       if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject
-        stream.getTracks().forEach(t => t.stop())
         videoRef.current.srcObject = null
       }
     }
   }, [onScan])
+
+  // 🆕 Función para alternar el flash
+  async function toggleFlash() {
+    if (!streamRef.current) return
+    
+    const videoTrack = streamRef.current.getVideoTracks()[0]
+    if (!videoTrack) return
+    
+    try {
+      const nuevoEstado = !flashOn
+      await videoTrack.applyConstraints({
+        advanced: [{ torch: nuevoEstado }]
+      })
+      setFlashOn(nuevoEstado)
+    } catch (err) {
+      console.error('Error al cambiar flash:', err)
+      setStatus('⚠️ Este dispositivo no soporta flash')
+      setTimeout(() => setStatus('🎯 Apuntá al código de barras'), 2000)
+    }
+  }
 
   return (
     <div style={s.modal}>
@@ -213,6 +263,16 @@ export default function EscanerBarras({ onScan, onClose }) {
             </div>
           </div>
           <div style={s.status}>{status}</div>
+          
+          {/* 🆕 Botón de flash (solo si está soportado) */}
+          {flashSupported && (
+            <button 
+              style={s.flashBtn(flashOn)} 
+              onClick={toggleFlash}
+            >
+              {flashOn ? '🔆 Apagar' : '🔦 Encender flash'}
+            </button>
+          )}
         </div>
       )}
     </div>
