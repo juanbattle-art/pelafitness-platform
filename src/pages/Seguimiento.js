@@ -498,10 +498,11 @@ export default function Seguimiento({ perfil }) {
     setAlimentoSel(al)
     if (al.unidades && Array.isArray(al.unidades) && al.unidades.length > 0) {
       setUnidadSel(al.unidades[0])
+      setCantidad(1)
     } else {
       setUnidadSel({ nombre: 'Por gramos', gramos: 100, esGramos: true })
+      setCantidad(100)
     }
-    setCantidad(1)
   }
 
   function calcularPorGramos(al, g) {
@@ -517,6 +518,9 @@ export default function Seguimiento({ perfil }) {
   function calcularGramosFinal() {
     if (!unidadSel) return 0
     const cant = parseFloat(cantidad) || 0
+    // Si es modo "por gramos", la cantidad SON los gramos directamente
+    if (unidadSel.esGramos) return cant
+    // Si es una unidad (1 vaso, 1 cucharón), multiplicamos por los gramos de esa unidad
     return unidadSel.gramos * cant
   }
 
@@ -915,7 +919,7 @@ export default function Seguimiento({ perfil }) {
               const isSelected = unidadSel?.nombre === u.nombre
               const macrosUnidad = calcularPorGramos(alimentoSel, u.gramos)
               return (
-                <div key={idx} style={s.unidadOption(isSelected)} onClick={() => { setUnidadSel(u); setCantidad(1) }}>
+                <div key={idx} style={s.unidadOption(isSelected)} onClick={() => { setUnidadSel(u); setCantidad(u.esGramos ? 100 : 1) }}>
                   <div style={s.unidadHeader}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
                       <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${isSelected ? '#f5e642' : '#444'}`, background: isSelected ? '#f5e642' : 'transparent', flexShrink: 0 }}/>
