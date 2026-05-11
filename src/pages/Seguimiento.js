@@ -100,6 +100,7 @@ const s = {
   weekDayName: { fontSize: 13, color: '#ccc', fontWeight: 600 },
   weekDayDate: { fontSize: 11, color: '#666' },
   weekDayCal: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1 },
+  customAlert: { background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8, padding: '12px 14px', marginBottom: 14, fontSize: 12, color: '#a855f7' },
 }
 
 const MOMENTOS = [
@@ -208,6 +209,20 @@ export default function Seguimiento({ perfil }) {
   const [pesoInput, setPesoInput] = useState('')
   const [ejercicioInput, setEjercicioInput] = useState({ ejercicio: '', series: '', repeticiones: '', peso_kg: '', notas: '' })
   const [metasForm, setMetasForm] = useState({ calorias: '', proteinas: '', carbohidratos: '', grasas: '' })
+  
+  // 🆕 NUEVO: estado para modal de producto custom
+  const [showCustomModal, setShowCustomModal] = useState(false)
+  const [customForm, setCustomForm] = useState({ 
+    codigo_barras: '', 
+    nombre: '', 
+    marca: '', 
+    calorias: '', 
+    proteinas: '', 
+    carbohidratos: '', 
+    grasas: '',
+    imagen_url: ''
+  })
+  
   const META_AGUA = 8
   const timeoutRef = useRef(null)
 
@@ -308,7 +323,8 @@ export default function Seguimiento({ perfil }) {
     }, 500)
   }
 
- async function onScanBarcode(codigo) {
+  // 🆕 FUNCIÓN MEJORADA: ahora detecta productos sin datos y abre modal custom
+  async function onScanBarcode(codigo) {
     setShowEscaner(false)
     setBuscando(true)
     
@@ -335,23 +351,45 @@ export default function Seguimiento({ perfil }) {
       
       if (data.status === 1 && data.product) {
         const p = data.product
+        const tieneNombre = p.product_name && p.product_name.trim().length > 0
+        const tieneCalorias = p.nutriments && p.nutriments['energy-kcal_100g'] && p.nutriments['energy-kcal_100g'] > 0
+        
+        // 🆕 SI NO TIENE DATOS COMPLETOS → ABRIR MODAL CUSTOM (pre-relleno)
+        if (!tieneNombre || !tieneCalorias) {
+          setCustomForm({
+            codigo_barras: codigo,
+            nombre: tieneNombre ? p.product_name : '',
+            marca: p.brands || '',
+            calorias: tieneCalorias ? Math.round(p.nutriments['energy-kcal_100g']) : '',
+            proteinas: p.nutriments?.['proteins_100g'] ? parseFloat(p.nutriments['proteins_100g']).toFixed(1) : '',
+            carbohidratos: p.nutriments?.['carbohydrates_100g'] ? parseFloat(p.nutriments['carbohydrates_100g']).toFixed(1) : '',
+            grasas: p.nutriments?.['fat_100g'] ? parseFloat(p.nutriments['fat_100g']).toFixed(1) : '',
+            imagen_url: p.image_small_url || p.image_url || ''
+          })
+          setShowCustomModal(true)
+          setBuscando(false)
+          setMsg('⚠️ Producto sin datos completos. Cargá lo que falta.')
+          setTimeout(() => setMsg(''), 3000)
+          return
+        }
+        
+        // SI TIENE DATOS COMPLETOS → guardar en base + abrir porción
         const alimento = {
           codigo_barras: codigo,
-          nombre: p.product_name || 'Producto sin nombre',
+          nombre: p.product_name,
           marca: p.brands || '',
           imagen_url: p.image_small_url || p.image_url || null,
-          calorias: Math.round(p.nutriments?.['energy-kcal_100g'] || 0),
-          proteinas: parseFloat((p.nutriments?.['proteins_100g'] || 0).toFixed(1)),
-          carbohidratos: parseFloat((p.nutriments?.['carbohydrates_100g'] || 0).toFixed(1)),
-          grasas: parseFloat((p.nutriments?.['fat_100g'] || 0).toFixed(1)),
+          calorias: Math.round(p.nutriments['energy-kcal_100g']),
+          proteinas: parseFloat(p.nutriments['proteins_100g'] || 0),
+          carbohidratos: parseFloat(p.nutriments['carbohydrates_100g'] || 0),
+          grasas: parseFloat(p.nutriments['fat_100g'] || 0),
           unidades: [],
           categoria: 'Escaneado',
           pais: p.countries || 'Internacional',
           popularidad: 1
         }
         
-        // 🆕 GUARDAR EN BASE LOCAL para futuras búsquedas
-        const { data: insertado, error } = await supabase
+        const { data: insertado } = await supabase
           .from('alimentos')
           .insert(alimento)
           .select()
@@ -361,6 +399,7 @@ export default function Seguimiento({ perfil }) {
           seleccionarAlimento({ ...insertado, fuente: 'local' })
           setMsg(`✅ ${insertado.nombre} agregado a la base 🎉`)
         } else {
+          // Fallback si falla el insert (probablemente nombre duplicado)
           const { data: existente } = await supabase
             .from('alimentos')
             .select('*')
@@ -377,7 +416,19 @@ export default function Seguimiento({ perfil }) {
         }
         setTimeout(() => setMsg(''), 2500)
       } else {
-        setMsg(`❌ Código ${codigo} no encontrado`)
+        // 🆕 PRODUCTO NO ENCONTRADO EN OFF → ABRIR MODAL CUSTOM (vacío)
+        setCustomForm({
+          codigo_barras: codigo,
+          nombre: '',
+          marca: '',
+          calorias: '',
+          proteinas: '',
+          carbohidratos: '',
+          grasas: '',
+          imagen_url: ''
+        })
+        setShowCustomModal(true)
+        setMsg('🆕 Producto nuevo. Cargá los datos.')
         setTimeout(() => setMsg(''), 3000)
       }
     } catch (err) {
@@ -385,6 +436,60 @@ export default function Seguimiento({ perfil }) {
       setTimeout(() => setMsg(''), 3000)
     }
     setBuscando(false)
+  }
+
+  // 🆕 FUNCIÓN NUEVA: guardar producto custom desde el modal
+  async function guardarCustom() {
+    if (!customForm.nombre || !customForm.calorias) {
+      setMsg('⚠️ Faltan nombre y calorías')
+      setTimeout(() => setMsg(''), 2000)
+      return
+    }
+    
+    const alimento = {
+      codigo_barras: customForm.codigo_barras || null,
+      nombre: customForm.nombre.trim(),
+      marca: customForm.marca.trim(),
+      imagen_url: customForm.imagen_url || null,
+      calorias: parseFloat(customForm.calorias) || 0,
+      proteinas: parseFloat(customForm.proteinas) || 0,
+      carbohidratos: parseFloat(customForm.carbohidratos) || 0,
+      grasas: parseFloat(customForm.grasas) || 0,
+      unidades: [],
+      categoria: 'Custom',
+      pais: 'Argentina',
+      popularidad: 1
+    }
+    
+    const { data: insertado, error } = await supabase
+      .from('alimentos')
+      .insert(alimento)
+      .select()
+      .single()
+    
+    if (insertado) {
+      setShowCustomModal(false)
+      seleccionarAlimento({ ...insertado, fuente: 'custom' })
+      setMsg(`✅ ${insertado.nombre} agregado a la base 🎉`)
+      setTimeout(() => setMsg(''), 2500)
+    } else {
+      // Si falla por nombre duplicado, buscar el existente
+      const { data: existente } = await supabase
+        .from('alimentos')
+        .select('*')
+        .eq('nombre', alimento.nombre)
+        .maybeSingle()
+      
+      if (existente) {
+        setShowCustomModal(false)
+        seleccionarAlimento({ ...existente, fuente: 'local' })
+        setMsg(`✅ Ya existía: ${existente.nombre}`)
+        setTimeout(() => setMsg(''), 2500)
+      } else {
+        setMsg(`❌ Error al guardar: ${error?.message || 'desconocido'}`)
+        setTimeout(() => setMsg(''), 3000)
+      }
+    }
   }
 
   function abrirBuscador(momento) { setSearchMomento(momento); setShowSearch(true); setBusqueda(''); setResultados([]); setSearchTab('todo') }
@@ -534,6 +639,18 @@ export default function Seguimiento({ perfil }) {
                   <div style={s.circleStat}><span style={s.circleIcon}>🔥</span><div><div style={s.circleLabel}>Ejercicio</div><div style={s.circleValue}>{ejercicios.length}</div></div></div>
                 </div>
               </div>
+              {totalCal > metas.calorias && (
+                <div style={{ background: 'rgba(255,77,77,0.1)', border: '1px solid rgba(255,77,77,0.3)', borderRadius: 8, padding: '12px 14px', marginTop: 14, textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, color: '#ff4d4d', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>🚨 Te pasaste</div>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: '#ff4d4d', letterSpacing: 1 }}>+{Math.round(totalCal - metas.calorias)} kcal</div>
+                  <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>por encima de tu objetivo</div>
+                </div>
+              )}
+              {totalCal > 0 && totalCal <= metas.calorias && totalCal >= metas.calorias * 0.95 && (
+                <div style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '12px 14px', marginTop: 14, textAlign: 'center' }}>
+                  <div style={{ fontSize: 12, color: '#4ade80', fontWeight: 700 }}>✅ ¡Llegaste a tu objetivo!</div>
+                </div>
+              )}
             </div>
 
             <div style={s.card}>
@@ -575,11 +692,20 @@ export default function Seguimiento({ perfil }) {
 
         {tab === 'diario' && (
           <div>
-            <div style={{ background: '#111', borderRadius: 12, border: '1px solid #222', padding: 18, marginBottom: 14, textAlign: 'center' }}>
-              <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>Calorías restantes</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 38, color: totalCal > metas.calorias ? '#ff4d4d' : '#f5e642', letterSpacing: 1, margin: '6px 0' }}>{Math.round(Math.max(0, metas.calorias - totalCal))}</div>
-              <div style={{ fontSize: 12, color: '#666' }}><span style={{ color: '#888' }}>{metas.calorias}</span> objetivo − <span style={{ color: '#888' }}>{Math.round(totalCal)}</span> consumidas</div>
-            </div>
+            {totalCal > metas.calorias ? (
+              <div style={{ background: '#111', borderRadius: 12, border: '1px solid rgba(255,77,77,0.3)', padding: 18, marginBottom: 14, textAlign: 'center' }}>
+                <div style={{ fontSize: 11, color: '#ff4d4d', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>🚨 Te pasaste por</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 38, color: '#ff4d4d', letterSpacing: 1, margin: '6px 0' }}>+{Math.round(totalCal - metas.calorias)}</div>
+                <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 1 }}>kcal sobre tu objetivo</div>
+                <div style={{ fontSize: 12, color: '#666', marginTop: 8 }}><span style={{ color: '#888' }}>{metas.calorias}</span> objetivo · <span style={{ color: '#ff4d4d', fontWeight: 700 }}>{Math.round(totalCal)}</span> consumidas</div>
+              </div>
+            ) : (
+              <div style={{ background: '#111', borderRadius: 12, border: '1px solid #222', padding: 18, marginBottom: 14, textAlign: 'center' }}>
+                <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>Calorías restantes</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 38, color: '#f5e642', letterSpacing: 1, margin: '6px 0' }}>{Math.round(Math.max(0, metas.calorias - totalCal))}</div>
+                <div style={{ fontSize: 12, color: '#666' }}><span style={{ color: '#888' }}>{metas.calorias}</span> objetivo − <span style={{ color: '#888' }}>{Math.round(totalCal)}</span> consumidas</div>
+              </div>
+            )}
             {MOMENTOS.map(mom => {
               const delMomento = comidas.filter(c => c.momento === mom.id)
               const calMomento = delMomento.reduce((s, c) => s + (c.calorias || 0), 0)
@@ -906,6 +1032,97 @@ export default function Seguimiento({ perfil }) {
             )}
             <button style={{ ...s.btn, opacity: macrosOk ? 1 : 0.5, cursor: macrosOk ? 'pointer' : 'not-allowed' }} onClick={() => { if (macrosOk) guardarMetas() }}>
               {macrosOk ? 'Guardar metas' : 'Ajustá los macros para guardar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🆕 NUEVO MODAL: cargar producto custom cuando OFF no tiene datos */}
+      {showCustomModal && (
+        <div style={s.porcionModal} onClick={() => setShowCustomModal(false)}>
+          <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
+            <div style={s.porcionHeader}>
+              <div>
+                <div style={s.porcionNombre}>📝 Crear producto</div>
+                <div style={s.porcionMarca}>Cargá los datos del producto escaneado</div>
+              </div>
+              <button style={s.searchClose} onClick={() => setShowCustomModal(false)}>✕</button>
+            </div>
+            
+            <div style={s.customAlert}>
+              💡 Mirá la etiqueta nutricional del producto. Cargá los valores POR 100g.
+            </div>
+            
+            {customForm.codigo_barras && (
+              <div style={{ fontSize: 11, color: '#666', marginBottom: 10 }}>
+                📷 Código: {customForm.codigo_barras}
+              </div>
+            )}
+            
+            <label style={s.label}>Nombre del producto *</label>
+            <input 
+              style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} 
+              value={customForm.nombre} 
+              onChange={e => setCustomForm({ ...customForm, nombre: e.target.value })} 
+              placeholder="Ej: Galletitas integrales con chia"
+              autoFocus
+            />
+            
+            <label style={s.label}>Marca</label>
+            <input 
+              style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} 
+              value={customForm.marca} 
+              onChange={e => setCustomForm({ ...customForm, marca: e.target.value })} 
+              placeholder="Ej: Granix"
+            />
+            
+            <label style={s.label}>🔥 Calorías (por 100g) *</label>
+            <input 
+              style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} 
+              type="number" 
+              value={customForm.calorias} 
+              onChange={e => setCustomForm({ ...customForm, calorias: e.target.value })} 
+              placeholder="450"
+            />
+            
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1 }}>
+                <label style={s.label}>🥩 Proteínas (g)</label>
+                <input 
+                  style={s.porcionInput} 
+                  type="number" 
+                  step="0.1"
+                  value={customForm.proteinas} 
+                  onChange={e => setCustomForm({ ...customForm, proteinas: e.target.value })} 
+                  placeholder="10"
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={s.label}>🍚 Carbos (g)</label>
+                <input 
+                  style={s.porcionInput} 
+                  type="number" 
+                  step="0.1"
+                  value={customForm.carbohidratos} 
+                  onChange={e => setCustomForm({ ...customForm, carbohidratos: e.target.value })} 
+                  placeholder="60"
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={s.label}>🥑 Grasas (g)</label>
+                <input 
+                  style={s.porcionInput} 
+                  type="number" 
+                  step="0.1"
+                  value={customForm.grasas} 
+                  onChange={e => setCustomForm({ ...customForm, grasas: e.target.value })} 
+                  placeholder="15"
+                />
+              </div>
+            </div>
+            
+            <button style={s.btn} onClick={guardarCustom}>
+              ✅ Guardar y agregar al diario
             </button>
           </div>
         </div>
