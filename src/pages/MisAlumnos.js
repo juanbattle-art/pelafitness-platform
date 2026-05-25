@@ -28,6 +28,17 @@ const s = {
   resumenStat: { display: 'flex', flexDirection: 'column', gap: 4 },
   resumenLabel: { fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: 1 },
   resumenValue: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: '#f5e642', letterSpacing: 1 },
+  // Solicitudes pendientes
+  pendSection: { background: 'rgba(245,230,66,0.05)', border: '1px solid rgba(245,230,66,0.25)', borderRadius: 12, padding: 16, marginBottom: 24 },
+  pendTitle: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#f5e642', letterSpacing: 1, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 },
+  pendSubtitle: { fontSize: 12, color: '#888', marginBottom: 16 },
+  pendCard: { background: '#111', border: '1px solid #2a2a2a', borderRadius: 10, padding: 14, marginBottom: 10 },
+  pendInfo: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 },
+  pendAvatar: { width: 42, height: 42, borderRadius: '50%', background: 'rgba(245,230,66,0.2)', color: '#f5e642', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, flexShrink: 0, fontFamily: "'Bebas Neue', sans-serif" },
+  pendBtns: { display: 'flex', gap: 8 },
+  btnAprobar: { flex: 1, background: 'rgba(74,222,128,0.15)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  btnRechazar: { flex: 1, background: 'rgba(255,150,50,0.12)', color: '#ff9632', border: '1px solid rgba(255,150,50,0.3)', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  btnEliminar: { background: 'rgba(255,77,77,0.12)', color: '#ff4d4d', border: '1px solid rgba(255,77,77,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
 }
 
 function fechaHoy() {
@@ -45,9 +56,11 @@ function sumarDias(fechaStr, dias) {
 export default function MisAlumnos({ perfil }) {
   const navigate = useNavigate()
   const [alumnos, setAlumnos] = useState([])
+  const [pendientes, setPendientes] = useState([])
   const [stats, setStats] = useState({})
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(true)
+  const [procesando, setProcesando] = useState(null)
 
   useEffect(() => {
     cargarAlumnos()
@@ -55,9 +68,9 @@ export default function MisAlumnos({ perfil }) {
 
   async function cargarAlumnos() {
     setLoading(true)
-    const { data: alumnosData, error } = await supabase
+    const { data: todos, error } = await supabase
       .from('profiles')
-      .select('id, email, nombre, rol')
+      .select('id, email, nombre, rol, estado')
       .eq('rol', 'alumno')
       .order('nombre')
 
@@ -67,14 +80,19 @@ export default function MisAlumnos({ perfil }) {
       return
     }
 
-    setAlumnos(alumnosData || [])
+    // Separar pendientes de aprobados
+    const pend = (todos || []).filter(a => a.estado === 'pendiente')
+    const aprob = (todos || []).filter(a => a.estado === 'aprobado' || !a.estado)
 
-    // Cargar stats de cada alumno (últimos 7 días)
+    setPendientes(pend)
+    setAlumnos(aprob)
+
+    // Cargar stats solo de los aprobados (últimos 7 días)
     const hoy = fechaHoy()
     const hace7 = sumarDias(hoy, -6)
     const statsObj = {}
 
-    for (const alumno of (alumnosData || [])) {
+    for (const alumno of aprob) {
       const [{ data: comidas }, { data: peso }] = await Promise.all([
         supabase.from('registros_comidas').select('fecha, calorias').eq('alumno_id', alumno.id).gte('fecha', hace7).lte('fecha', hoy),
         supabase.from('registros_peso').select('peso, fecha').eq('alumno_id', alumno.id).order('fecha', { ascending: false }).limit(1)
@@ -94,6 +112,50 @@ export default function MisAlumnos({ perfil }) {
 
     setStats(statsObj)
     setLoading(false)
+  }
+
+  async function aprobar(alumno) {
+    setProcesando(alumno.id)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ estado: 'aprobado' })
+      .eq('id', alumno.id)
+    if (error) {
+      alert('Error al aprobar: ' + error.message)
+    } else {
+      await cargarAlumnos()
+    }
+    setProcesando(null)
+  }
+
+  async function rechazar(alumno) {
+    if (!window.confirm(`¿Rechazar a ${alumno.nombre}? No va a poder entrar a la app.`)) return
+    setProcesando(alumno.id)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ estado: 'rechazado' })
+      .eq('id', alumno.id)
+    if (error) {
+      alert('Error al rechazar: ' + error.message)
+    } else {
+      await cargarAlumnos()
+    }
+    setProcesando(null)
+  }
+
+  async function eliminar(alumno) {
+    if (!window.confirm(`¿Eliminar el perfil de ${alumno.nombre}? Esta acción no se puede deshacer.`)) return
+    setProcesando(alumno.id)
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', alumno.id)
+    if (error) {
+      alert('Error al eliminar: ' + error.message)
+    } else {
+      await cargarAlumnos()
+    }
+    setProcesando(null)
   }
 
   function abrirAlumno(alumno) {
@@ -121,6 +183,40 @@ export default function MisAlumnos({ perfil }) {
       <main style={s.main}>
         <div style={s.title}>👀 Panel de Coach</div>
         <div style={s.subtitle}>Vé el seguimiento de tus alumnos. Tap en uno para ver/editar sus datos.</div>
+
+        {/* SOLICITUDES PENDIENTES */}
+        {!loading && pendientes.length > 0 && (
+          <div style={s.pendSection}>
+            <div style={s.pendTitle}>🔔 Solicitudes pendientes ({pendientes.length})</div>
+            <div style={s.pendSubtitle}>Estas personas se registraron y esperan tu aprobación.</div>
+            {pendientes.map(p => {
+              const inicial = p.nombre?.charAt(0).toUpperCase() || '?'
+              const esta = procesando === p.id
+              return (
+                <div key={p.id} style={s.pendCard}>
+                  <div style={s.pendInfo}>
+                    <div style={s.pendAvatar}>{inicial}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={s.alumnoNombre}>{p.nombre}</div>
+                      <div style={s.alumnoEmail}>{p.email}</div>
+                    </div>
+                  </div>
+                  <div style={s.pendBtns}>
+                    <button style={{ ...s.btnAprobar, opacity: esta ? 0.5 : 1 }} disabled={esta} onClick={() => aprobar(p)}>
+                      {esta ? '...' : '✓ Aprobar'}
+                    </button>
+                    <button style={{ ...s.btnRechazar, opacity: esta ? 0.5 : 1 }} disabled={esta} onClick={() => rechazar(p)}>
+                      ✗ Rechazar
+                    </button>
+                    <button style={{ ...s.btnEliminar, opacity: esta ? 0.5 : 1 }} disabled={esta} onClick={() => eliminar(p)}>
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {!loading && (
           <div style={s.resumen}>
@@ -150,7 +246,7 @@ export default function MisAlumnos({ perfil }) {
 
         {!loading && alumnosFiltrados.length === 0 && (
           <div style={s.empty}>
-            {busqueda ? 'No se encontraron alumnos.' : 'Aún no tenés alumnos creados.'}
+            {busqueda ? 'No se encontraron alumnos.' : 'Aún no tenés alumnos aprobados.'}
           </div>
         )}
 
