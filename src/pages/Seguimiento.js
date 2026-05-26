@@ -212,7 +212,7 @@ export default function EscanerBarras({ onScan, onClose }) {
         videoRef.current.srcObject = null
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+ 
   }, [onScan])
 
   // 🆕 Función para alternar el flash
