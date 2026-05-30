@@ -95,7 +95,9 @@ export default function Dashboard({ perfil }) {
               <div style={s.pdfDesc}>Tu guía completa de nutrición y entrenamiento — incluida con tu acceso</div>
             </div>
           </div>
-          <a href={PDF_URL} target="_blank" rel="noopener noreferrer" style={s.pdfBtn} download>
+        <a href={PDF_URL} target="_blank" rel="noopener noreferrer" style={s.pdfBtn}>
+  ⬇ Descargar PDF
+</a>
             ⬇ Descargar PDF
           </a>
         </div>
