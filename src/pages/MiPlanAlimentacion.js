@@ -662,3 +662,4 @@ export default function MiPlanAlimentacion({ perfil }) {
     </div>
   )
 }
+
