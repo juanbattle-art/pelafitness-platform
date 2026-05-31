@@ -182,14 +182,10 @@ Respondé SOLO con JSON válido, sin texto extra, sin markdown, exactamente este
 }`
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('https://zdmoxnapheaizbinxvqr.supabase.co/functions/v1/generar-planes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4000,
-          messages: [{ role: 'user', content: prompt }]
-        })
+        body: JSON.stringify({ prompt })
       })
       const data = await response.json()
       const texto = data.content?.[0]?.text || ''
