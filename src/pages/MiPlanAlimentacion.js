@@ -150,7 +150,7 @@ export default function MiPlanAlimentacion({ perfil }) {
     const calorias = caloriasObjetivo || 2000
     const listaAlimentos = alimentosSeleccionados.map(a => `${a.nombre} (${a.calorias}kcal/100g, P:${a.proteinas}g C:${a.carbohidratos}g G:${a.grasas}g)`).join(', ')
 
-    const prompt = `Sos un nutricionista deportivo experto. Creá 7 planes de alimentación diaria diferentes usando SOLO estos alimentos: ${listaAlimentos}.
+    const prompt = `Nutricionista experto. Creá 7 planes de comida diaria usando SOLO estos alimentos: ${listaAlimentos}. Objetivo: ${objetivo}. Calorías: ${calorias} kcal. Cada plan tiene 4 comidas (Desayuno, Almuerzo, Merienda, Cena) con 2-3 items cada una. Respondé SOLO JSON válido sin texto extra: {"planes":[{"nombre":"Plan Día 1","calorias_total":2000,"proteinas_total":150,"carbohidratos_total":200,"grasas_total":65,"comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6}]}]}]}` usando SOLO estos alimentos: ${listaAlimentos}.
 
 Objetivo del usuario: ${objetivo}
 Calorías objetivo por día: ${calorias} kcal
