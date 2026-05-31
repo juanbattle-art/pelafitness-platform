@@ -182,7 +182,7 @@ Respondé SOLO con JSON válido, sin texto extra, sin markdown, exactamente este
 }`
 
     try {
-      const response = await fetch('https://zdmoxnapheaizbinxvqr.supabase.co/functions/v1/generar-planes', {
+      const response = await fetch('https://zdmoxnapheaizbinxvqr.supabase.co/functions/v1/quick-responder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
