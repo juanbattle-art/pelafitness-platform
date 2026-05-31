@@ -8,7 +8,7 @@ const TIPO_CONFIG = {
   mentalidad: { emoji: '🧠', color: '#818cf8', label: 'Mentalidad' },
 }
 
-const PDF_URL = 'https://pelafitness-platform.onrender.com/Guia-quema-grasa.pdf.pdf'
+const PDF_URL = 'https://pelafitness-platform.onrender.com/guia-quema-grasa.pdf'
 
 const s = {
   page: { minHeight: '100vh', background: '#0a0a0a' },
@@ -47,9 +47,10 @@ export default function Dashboard({ perfil }) {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  useEffect(() => { cargarProgramas() }, [])
+  useEffect(() => { if (perfil?.id) cargarProgramas() }, [perfil])
 
   async function cargarProgramas() {
+    if (!perfil?.id) return
     const { data } = await supabase
       .from('asignaciones')
       .select('programa_id, programas(*)')
@@ -153,3 +154,4 @@ export default function Dashboard({ perfil }) {
     </div>
   )
 }
+
