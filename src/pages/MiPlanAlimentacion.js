@@ -150,36 +150,7 @@ export default function MiPlanAlimentacion({ perfil }) {
     const calorias = caloriasObjetivo || 2000
     const listaAlimentos = alimentosSeleccionados.map(a => `${a.nombre} (${a.calorias}kcal/100g, P:${a.proteinas}g C:${a.carbohidratos}g G:${a.grasas}g)`).join(', ')
 
-    const prompt = `Nutricionista experto. Creá 7 planes de comida diaria usando SOLO estos alimentos: ${listaAlimentos}. Objetivo: ${objetivo}. Calorías: ${calorias} kcal. Cada plan tiene 4 comidas (Desayuno, Almuerzo, Merienda, Cena) con 2-3 items cada una. Respondé SOLO JSON válido sin texto extra: {"planes":[{"nombre":"Plan Día 1","calorias_total":2000,"proteinas_total":150,"carbohidratos_total":200,"grasas_total":65,"comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6}]}]}]}` usando SOLO estos alimentos: ${listaAlimentos}.
-
-Objetivo del usuario: ${objetivo}
-Calorías objetivo por día: ${calorias} kcal
-
-Para cada plan armá exactamente 4 comidas: Desayuno, Almuerzo, Merienda y Cena.
-Cada comida debe tener 2-4 alimentos con cantidades específicas en gramos.
-Los macros totales del día deben estar cerca del objetivo calórico.
-
-Respondé SOLO con JSON válido, sin texto extra, sin markdown, exactamente este formato:
-{
-  "planes": [
-    {
-      "nombre": "Plan Día 1",
-      "calorias_total": 2000,
-      "proteinas_total": 150,
-      "carbohidratos_total": 200,
-      "grasas_total": 65,
-      "comidas": [
-        {
-          "momento": "Desayuno",
-          "items": [
-            {"nombre": "Avena", "cantidad_gramos": 80, "calorias": 311, "proteinas": 14, "carbohidratos": 53, "grasas": 6},
-            {"nombre": "Huevo entero", "cantidad_gramos": 100, "calorias": 155, "proteinas": 13, "carbohidratos": 1, "grasas": 11}
-          ]
-        }
-      ]
-    }
-  ]
-}`
+    const prompt = 'Eres nutricionista. Crea 7 planes de comida diaria diferentes usando SOLO estos alimentos: ' + listaAlimentos + '. Objetivo: ' + objetivo + '. Calorias: ' + calorias + ' kcal. Cada plan tiene 4 comidas (Desayuno, Almuerzo, Merienda, Cena) con 2-3 items cada una con gramos especificos. Responde SOLO JSON valido sin texto extra con este formato exacto: {"planes":[{"nombre":"Plan Dia 1","calorias_total":2000,"proteinas_total":150,"carbohidratos_total":200,"grasas_total":65,"comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6}]}]}]}'
 
     try {
       const response = await fetch('https://zdmoxnapheaizbinxvqr.supabase.co/functions/v1/quick-responder', {
