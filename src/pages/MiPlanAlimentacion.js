@@ -150,7 +150,7 @@ export default function MiPlanAlimentacion({ perfil }) {
     const calorias = caloriasObjetivo || 2000
     const listaAlimentos = alimentosSeleccionados.map(a => `${a.nombre} (${a.calorias}kcal/100g, P:${a.proteinas}g C:${a.carbohidratos}g G:${a.grasas}g)`).join(', ')
 
-    const prompt = 'Eres nutricionista. Crea 7 planes de comida diaria diferentes usando SOLO estos alimentos: ' + listaAlimentos + '. Objetivo: ' + objetivo + '. Calorias: ' + calorias + ' kcal. Cada plan tiene 4 comidas (Desayuno, Almuerzo, Merienda, Cena) con 2-3 items cada una con gramos especificos. Responde SOLO JSON valido sin texto extra con este formato exacto: {"planes":[{"nombre":"Plan Dia 1","calorias_total":2000,"proteinas_total":150,"carbohidratos_total":200,"grasas_total":65,"comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6}]}]}]}'
+    const prompt = 'Eres nutricionista deportivo. Crea 7 planes de comida diaria DIFERENTES usando SOLO estos alimentos: ' + listaAlimentos + '. Objetivo: ' + objetivo + '. ' + calorias + ' kcal por dia. Cada plan tiene 4 comidas: Desayuno, Almuerzo, Merienda, Cena. Reglas: 1) Desayuno con alimentos tipicos de desayuno (avena, huevos, yogur, frutas). 2) Almuerzo y Cena con proteina + carbo + vegetal. 3) Merienda liviana. 4) Los macros de cada item deben ser correctos segun gramos: si el alimento tiene X kcal/100g y usas Y gramos, calorias = X*Y/100. 5) NO pongas salmon ni carne de desayuno. 6) NO incluyas los campos calorias_total, proteinas_total, carbohidratos_total, grasas_total. Responde SOLO JSON valido sin texto ni markdown: {"planes":[{"nombre":"Plan Dia 1","comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6},{"nombre":"Huevo entero","cantidad_gramos":100,"calorias":155,"proteinas":13,"carbohidratos":1,"grasas":11}]},{"momento":"Almuerzo","items":[{"nombre":"Pechuga de pollo","cantidad_gramos":200,"calorias":330,"proteinas":62,"carbohidratos":0,"grasas":8}]},{"momento":"Merienda","items":[{"nombre":"Yogur griego natural","cantidad_gramos":200,"calorias":118,"proteinas":20,"carbohidratos":8,"grasas":0}]},{"momento":"Cena","items":[{"nombre":"Salmon","cantidad_gramos":150,"calorias":312,"proteinas":30,"carbohidratos":0,"grasas":20}]}]}]}'
 
     try {
       const response = await fetch('https://zdmoxnapheaizbinxvqr.supabase.co/functions/v1/quick-responder', {
@@ -399,15 +399,19 @@ export default function MiPlanAlimentacion({ perfil }) {
                 <div style={{ fontSize: 13, color: '#555', marginBottom: 20 }}>Tocá cada plan para verlo en detalle y guardarlo.</div>
 
                 {planesGenerados.map((plan, i) => {
-                  const t = calcTotales([{ items: plan.comidas?.flatMap(c => c.items) }])
+                  const todosItems = plan.comidas?.flatMap(c => c.items) || []
+                  const tCal = Math.round(todosItems.reduce((s, i) => s + (i.calorias || 0), 0))
+                  const tP = Math.round(todosItems.reduce((s, i) => s + (i.proteinas || 0), 0))
+                  const tC = Math.round(todosItems.reduce((s, i) => s + (i.carbohidratos || 0), 0))
+                  const tG = Math.round(todosItems.reduce((s, i) => s + (i.grasas || 0), 0))
                   return (
                     <div key={i} style={s.card} onClick={() => setPlanGeneradoDetalle(plan)}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: '#4ade80' }}>{plan.nombre}</div>
-                          <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>{plan.comidas?.length} comidas · {plan.calorias_total} kcal</div>
+                          <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>{plan.comidas?.length} comidas · {tCal} kcal</div>
                           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                            {[{ l: 'P', v: plan.proteinas_total, c: '#60a5fa' }, { l: 'C', v: plan.carbohidratos_total, c: '#f97316' }, { l: 'G', v: plan.grasas_total, c: '#facc15' }].map(m => (
+                            {[{ l: 'P', v: tP, c: '#60a5fa' }, { l: 'C', v: tC, c: '#f97316' }, { l: 'G', v: tG, c: '#facc15' }].map(m => (
                               <span key={m.l} style={{ fontSize: 12, color: m.c, fontWeight: 700 }}>{m.l}: {m.v}g</span>
                             ))}
                           </div>
@@ -437,7 +441,7 @@ export default function MiPlanAlimentacion({ perfil }) {
             {/* Macros totales */}
             <div style={{ background: '#0d0d0d', border: '1px solid #222', borderRadius: 10, padding: 14, marginBottom: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
-                {[{ l: 'KCAL', v: planGeneradoDetalle.calorias_total, c: '#f5e642' }, { l: 'PROT', v: `${planGeneradoDetalle.proteinas_total}g`, c: '#60a5fa' }, { l: 'CARBS', v: `${planGeneradoDetalle.carbohidratos_total}g`, c: '#f97316' }, { l: 'GRASAS', v: `${planGeneradoDetalle.grasas_total}g`, c: '#facc15' }].map(m => (
+                {(() => { const its = planGeneradoDetalle.comidas?.flatMap(c => c.items) || []; const tCal2 = Math.round(its.reduce((s,i)=>s+(i.calorias||0),0)); const tP2 = Math.round(its.reduce((s,i)=>s+(i.proteinas||0),0)); const tC2 = Math.round(its.reduce((s,i)=>s+(i.carbohidratos||0),0)); const tG2 = Math.round(its.reduce((s,i)=>s+(i.grasas||0),0)); return [{ l: 'KCAL', v: tCal2, c: '#f5e642' }, { l: 'PROT', v: tP2+'g', c: '#60a5fa' }, { l: 'CARBS', v: tC2+'g', c: '#f97316' }, { l: 'GRASAS', v: tG2+'g', c: '#facc15' }] })().map(m => (
                   <div key={m.l}>
                     <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: m.c }}>{m.v}</div>
                     <div style={{ fontSize: 10, color: '#555', letterSpacing: 1 }}>{m.l}</div>
@@ -662,4 +666,3 @@ export default function MiPlanAlimentacion({ perfil }) {
     </div>
   )
 }
-
