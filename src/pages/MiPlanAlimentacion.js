@@ -183,9 +183,13 @@ Respondé SOLO con JSON válido, sin texto extra, sin markdown, exactamente este
 
     try {
       const response = await fetch('https://zdmoxnapheaizbinxvqr.supabase.co/functions/v1/quick-responder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkbW94bmFwaGVhaXpiaW54dnFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ3NTI0NTgsImV4cCI6MjA2MDMyODQ1OH0.rnkDz4Lal4rFPiGnCOBSFh7-1wPxKJ5yoU-jLRVBkQE'
+  },
+  body: JSON.stringify({ prompt })
+})
       })
       const data = await response.json()
       const texto = data.content?.[0]?.text || ''
