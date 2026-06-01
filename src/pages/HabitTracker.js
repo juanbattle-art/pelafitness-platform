@@ -29,7 +29,8 @@ function fechaStr(year, month, day) {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 function hoyStr() {
-  return new Date().toISOString().split('T')[0]
+  const d = new Date()
+  return fechaStr(d.getFullYear(), d.getMonth(), d.getDate())
 }
 
 const s = {
