@@ -308,78 +308,179 @@ export default function HabitTracker({ perfil }) {
         )}
 
         {/* TAB STATS */}
-        {tab === 'stats' && (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-              {[
-                { label: 'Hábitos activos', value: habitos.length, color: '#f5e642', emoji: '🎯' },
-                { label: 'Completados hoy', value: completadosHoy(), color: '#4ade80', emoji: '✅' },
-                { label: 'Mejor racha activa', value: habitos.length ? Math.max(0, ...habitos.map(h => calcRacha(h.id))) + '🔥' : '0', color: '#f97316', emoji: '🏆' },
-                { label: `Completados en ${MESES[today.getMonth()]}`, value: habitos.reduce((acc, h) => acc + getCompletadosMes(h.id, today.getFullYear(), today.getMonth()), 0), color: '#60a5fa', emoji: '📅' },
-              ].map(stat => (
-                <div key={stat.label} style={{ ...s.card, textAlign: 'center', padding: 14 }}>
-                  <div style={{ fontSize: 26, marginBottom: 4 }}>{stat.emoji}</div>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: stat.color }}>{stat.value}</div>
-                  <div style={{ fontSize: 10, color: '#555', marginTop: 2, lineHeight: 1.3 }}>{stat.label}</div>
-                </div>
-              ))}
-            </div>
+        {tab === 'stats' && (() => {
+          const diasMesStats = getDiasDelMes(today.getFullYear(), today.getMonth())
+          const habitosConStats = [...habitos].map(h => ({
+            ...h,
+            completadosMes: getCompletadosMes(h.id, today.getFullYear(), today.getMonth()),
+            pct: Math.round((getCompletadosMes(h.id, today.getFullYear(), today.getMonth()) / diasMesStats) * 100),
+            racha: calcRacha(h.id),
+            rachaMasLarga: calcRachaMasLarga(h.id)
+          })).sort((a, b) => b.pct - a.pct)
+          const totalCompletadosMes = habitosConStats.reduce((acc, h) => acc + h.completadosMes, 0)
+          const totalPosiblesMes = habitos.length * diasMesStats
+          const pctGlobal = totalPosiblesMes ? Math.round((totalCompletadosMes / totalPosiblesMes) * 100) : 0
 
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, marginBottom: 10 }}>🏆 Ranking este mes</div>
-            {[...habitos]
-              .map(h => ({ ...h, completadosMes: getCompletadosMes(h.id, today.getFullYear(), today.getMonth()), pct: Math.round((getCompletadosMes(h.id, today.getFullYear(), today.getMonth()) / getDiasDelMes(today.getFullYear(), today.getMonth())) * 100), racha: calcRacha(h.id), rachaMasLarga: calcRachaMasLarga(h.id) }))
-              .sort((a, b) => b.pct - a.pct)
-              .map((h, i) => (
-                <div key={h.id} style={s.card}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: i === 0 ? '#f5e642' : i === 1 ? '#aaa' : i === 2 ? '#f97316' : '#444', width: 26 }}>#{i+1}</div>
-                    <span style={{ fontSize: 20 }}>{h.emoji}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{h.nombre}</div>
-                      <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
-                        🔥 Racha: {h.racha}d · Mejor: {h.rachaMasLarga}d · {h.completadosMes}/{getDiasDelMes(today.getFullYear(), today.getMonth())} días
-                      </div>
-                      <div style={{ marginTop: 6, height: 4, background: '#1a1a1a', borderRadius: 4, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${h.pct}%`, background: h.color, borderRadius: 4 }} />
-                      </div>
-                    </div>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: h.color }}>{h.pct}%</div>
+          // Datos por semana del mes actual
+          const semanasMes = []
+          let diaActual = 1
+          while (diaActual <= diasMesStats) {
+            const semana = []
+            const primerDiaSem = getPrimerDiaSemana(today.getFullYear(), today.getMonth())
+            for (let s = 0; s < 5; s++) {
+              const inicio = s === 0 ? 1 : semanasMes.length === 0 ? 1 : (7 - primerDiaSem) + 1 + (s - 1) * 7
+              const items = []
+              for (let d = inicio; d < inicio + 7 && d <= diasMesStats; d++) {
+                const f = fechaStr(today.getFullYear(), today.getMonth(), d)
+                const completados = habitos.filter(h => registros[h.id]?.has(f)).length
+                items.push({ dia: d, fecha: f, completados, total: habitos.length })
+              }
+              if (items.length) semanasMes.push(items)
+              break
+            }
+            break
+          }
+
+          // Calcular completados por día de la semana actual y las 4 anteriores
+          const semanasData = []
+          for (let w = 4; w >= 0; w--) {
+            const dias = []
+            for (let d = 0; d < 7; d++) {
+              const fecha = new Date(today)
+              fecha.setDate(today.getDate() - w * 7 - (today.getDay() === 0 ? 6 : today.getDay() - 1) + d)
+              const f = fechaStr(fecha.getFullYear(), fecha.getMonth(), fecha.getDate())
+              const completados = habitos.filter(h => registros[h.id]?.has(f)).length
+              dias.push({ f, completados, total: habitos.length, dia: d })
+            }
+            semanasData.push(dias)
+          }
+
+          const maxBarValue = habitos.length || 1
+
+          return (
+            <>
+              {/* Header progreso global */}
+              <div style={{ ...s.card, background: '#0d0d0d', border: '1px solid #222', marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#555', fontWeight: 700, letterSpacing: 1 }}>PROGRESO GLOBAL — {MESES[today.getMonth()].toUpperCase()}</div>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: '#f5e642', lineHeight: 1.1 }}>{totalCompletadosMes}<span style={{ fontSize: 18, color: '#555' }}>/{totalPosiblesMes}</span></div>
+                    <div style={{ fontSize: 12, color: '#888' }}>hábitos completados</div>
+                  </div>
+                  <div style={{ position: 'relative', width: 80, height: 80 }}>
+                    <svg viewBox="0 0 80 80" style={{ transform: 'rotate(-90deg)' }}>
+                      <circle cx="40" cy="40" r="32" fill="none" stroke="#1a1a1a" strokeWidth="8" />
+                      <circle cx="40" cy="40" r="32" fill="none" stroke={pctGlobal >= 80 ? '#4ade80' : pctGlobal >= 50 ? '#f5e642' : '#f97316'} strokeWidth="8"
+                        strokeDasharray={`${pctGlobal * 2.01} 201`} strokeLinecap="round" />
+                    </svg>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: '#f5e642' }}>{pctGlobal}%</div>
                   </div>
                 </div>
-              ))
-            }
+                <div style={{ height: 6, background: '#1a1a1a', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pctGlobal}%`, background: pctGlobal >= 80 ? '#4ade80' : '#f5e642', borderRadius: 4, transition: 'width 0.5s' }} />
+                </div>
+              </div>
 
-            {/* Mapa de calor anual */}
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, margin: '16px 0 10px' }}>📈 Actividad anual</div>
-            <div style={s.card}>
-              <div style={{ fontSize: 12, color: '#555', marginBottom: 10 }}>Últimos 12 meses — cada cuadro = 1 semana</div>
-              <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                {Array(52).fill(null).map((_, semana) => {
-                  const inicio = new Date()
-                  inicio.setDate(inicio.getDate() - (51 - semana) * 7)
-                  let totalSemana = 0, posiblesSemana = 0
-                  for (let d = 0; d < 7; d++) {
-                    const fecha = new Date(inicio)
-                    fecha.setDate(inicio.getDate() + d)
-                    const f = fecha.toISOString().split('T')[0]
-                    if (f <= hoy) {
-                      posiblesSemana += habitos.length
-                      totalSemana += habitos.filter(h => registros[h.id]?.has(f)).length
+              {/* Gráfico de barras por semana */}
+              <div style={{ ...s.card, marginBottom: 12 }}>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1, color: '#f0f0f0', marginBottom: 12 }}>📊 PROGRESO DIARIO — ÚLTIMAS 5 SEMANAS</div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                  {semanasData.map((semana, si) => (
+                    <div key={si} style={{ flex: 1, display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+                      {semana.map((dia, di) => {
+                        const pctDia = dia.total ? dia.completados / dia.total : 0
+                        const altura = Math.max(4, pctDia * 80)
+                        const esFuturo = dia.f > hoy
+                        const esHoyDia = dia.f === hoy
+                        const color = esFuturo ? '#1a1a1a' : pctDia === 0 ? '#222' : pctDia < 0.5 ? '#f97316' : pctDia < 1 ? '#f5e642' : '#4ade80'
+                        return (
+                          <div key={di} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                            <div style={{ width: '100%', height: altura, background: color, borderRadius: '3px 3px 0 0', border: esHoyDia ? '1px solid #fff' : 'none', transition: 'height 0.3s', minHeight: 4 }} />
+                            {si === 4 && <div style={{ fontSize: 8, color: esHoyDia ? '#f5e642' : '#444', fontWeight: esHoyDia ? 700 : 400 }}>{DIAS_SEMANA[di]}</div>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginTop: 10, fontSize: 10, flexWrap: 'wrap' }}>
+                  {[{ color: '#4ade80', label: '100%' }, { color: '#f5e642', label: '50-99%' }, { color: '#f97316', label: '1-49%' }, { color: '#222', label: '0%' }].map(l => (
+                    <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 8, height: 8, background: l.color, borderRadius: 2 }} />
+                      <span style={{ color: '#555' }}>{l.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ranking con barras horizontales coloreadas */}
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1, marginBottom: 10 }}>🏆 TOP HÁBITOS — {MESES[today.getMonth()].toUpperCase()}</div>
+              <div style={s.card}>
+                {habitosConStats.map((h, i) => (
+                  <div key={h.id} style={{ marginBottom: i < habitosConStats.length - 1 ? 14 : 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: i === 0 ? '#f5e642' : i === 1 ? '#aaa' : i === 2 ? '#f97316' : '#444' }}>#{i+1}</span>
+                        <span style={{ fontSize: 16 }}>{h.emoji}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>{h.nombre}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <span style={{ fontSize: 10, color: '#555' }}>🔥{h.racha}d</span>
+                        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: h.color }}>{h.pct}%</span>
+                      </div>
+                    </div>
+                    <div style={{ height: 8, background: '#1a1a1a', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${h.pct}%`, background: h.color, borderRadius: 4, transition: 'width 0.5s' }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: '#555', marginTop: 3 }}>{h.completadosMes}/{diasMesStats} días · Mejor racha: {h.rachaMasLarga} días</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Mapa de calor anual */}
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1, margin: '14px 0 10px' }}>📈 ACTIVIDAD ANUAL</div>
+              <div style={s.card}>
+                <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>Últimas 52 semanas</div>
+                <div style={{ display: 'flex', gap: 2 }}>
+                  {Array(52).fill(null).map((_, semana) => {
+                    const inicio = new Date(today)
+                    inicio.setDate(today.getDate() - (51 - semana) * 7 - (today.getDay() === 0 ? 6 : today.getDay() - 1))
+                    let total = 0, posibles = 0
+                    for (let d = 0; d < 7; d++) {
+                      const fecha = new Date(inicio)
+                      fecha.setDate(inicio.getDate() + d)
+                      const f = fechaStr(fecha.getFullYear(), fecha.getMonth(), fecha.getDate())
+                      if (f <= hoy) {
+                        posibles += habitos.length
+                        total += habitos.filter(h => registros[h.id]?.has(f)).length
+                      }
                     }
-                  }
-                  const pctSem = posiblesSemana ? totalSemana / posiblesSemana : 0
-                  const color = pctSem === 0 ? '#1a1a1a' : pctSem < 0.25 ? '#f5e64225' : pctSem < 0.5 ? '#f5e64250' : pctSem < 0.75 ? '#f5e64290' : '#f5e642'
-                  return <div key={semana} style={{ width: 'calc(100%/52 - 3px)', aspectRatio: '1', borderRadius: 2, background: color }} />
-                })}
+                    const pctSem = posibles ? total / posibles : 0
+                    const color = posibles === 0 ? '#0d0d0d' : pctSem === 0 ? '#1a1a1a' : pctSem < 0.33 ? '#f5e64230' : pctSem < 0.66 ? '#f5e64270' : pctSem < 1 ? '#f5e642b0' : '#f5e642'
+                    return (
+                      <div key={semana} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {Array(7).fill(null).map((_, d) => {
+                          const fecha = new Date(inicio)
+                          fecha.setDate(inicio.getDate() + d)
+                          const f = fechaStr(fecha.getFullYear(), fecha.getMonth(), fecha.getDate())
+                          const completados = habitos.filter(h => registros[h.id]?.has(f)).length
+                          const pct = habitos.length ? completados / habitos.length : 0
+                          const c = f > hoy ? '#0d0d0d' : pct === 0 ? '#1a1a1a' : pct < 0.5 ? '#f5e64240' : pct < 1 ? '#f5e64280' : '#f5e642'
+                          return <div key={d} style={{ aspectRatio: '1', borderRadius: 1, background: c }} />
+                        })}
+                      </div>
+                    )
+                  })}
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 8, fontSize: 10, color: '#555', alignItems: 'center' }}>
+                  <span>Menos</span>
+                  {['#1a1a1a', '#f5e64240', '#f5e64280', '#f5e642'].map((c, i) => <div key={i} style={{ width: 9, height: 9, background: c, borderRadius: 1 }} />)}
+                  <span>Más</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 10, color: '#555', alignItems: 'center' }}>
-                <span>Menos</span>
-                {['#1a1a1a', '#f5e64225', '#f5e64250', '#f5e64290', '#f5e642'].map(c => <div key={c} style={{ width: 10, height: 10, background: c, borderRadius: 2 }} />)}
-                <span>Más</span>
-              </div>
-            </div>
-          </>
-        )}
+            </>
+          )
+        })()}
 
         {/* TAB CONFIG */}
         {tab === 'config' && (
