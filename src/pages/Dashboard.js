@@ -47,10 +47,9 @@ export default function Dashboard({ perfil }) {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  useEffect(() => { if (perfil?.id) cargarProgramas() }, [perfil])
+  useEffect(() => { cargarProgramas() }, [])
 
   async function cargarProgramas() {
-    if (!perfil?.id) return
     const { data } = await supabase
       .from('asignaciones')
       .select('programa_id, programas(*)')
@@ -68,6 +67,7 @@ export default function Dashboard({ perfil }) {
     { emoji: '💪', label: 'MIS RUTINAS', sub: 'Armá tu entrenamiento', color: '#60a5fa', ruta: '/mi-rutina' },
     { emoji: '🥗', label: 'MI ALIMENTACIÓN', sub: 'Planes de comidas', color: '#4ade80', ruta: '/mi-plan-alimentacion' },
     { emoji: '🏋️', label: 'HOY ENTRENO', sub: 'Registrar sesión', color: '#f97316', ruta: '/mi-entrenamiento' },
+    { emoji: '🔥', label: 'MIS HÁBITOS', sub: 'Racha diaria', color: '#a78bfa', ruta: '/habitos' },
   ]
 
   return (
@@ -154,4 +154,3 @@ export default function Dashboard({ perfil }) {
     </div>
   )
 }
-
