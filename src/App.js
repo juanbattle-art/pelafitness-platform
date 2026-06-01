@@ -11,6 +11,7 @@ import PlanEntrenamiento from './pages/PlanEntrenamiento'
 import MiEntrenamiento from './pages/MiEntrenamiento'
 import MiRutina from './pages/MiRutina'
 import MiPlanAlimentacion from './pages/MiPlanAlimentacion'
+import HabitTracker from './pages/HabitTracker'
 
 const ADMIN_EMAIL = 'juanbattle@hotmail.com'
 
@@ -100,6 +101,7 @@ export default function App() {
         <Route path="/mis-alumnos" element={session && perfil?.rol === 'admin' ? <MisAlumnos perfil={perfil} /> : <Navigate to="/" />} />
         <Route path="/mi-rutina" element={session ? <MiRutina perfil={perfil} /> : <Navigate to="/login" />} />
         <Route path="/mi-plan-alimentacion" element={session ? <MiPlanAlimentacion perfil={perfil} /> : <Navigate to="/login" />} />
+        <Route path="/habitos" element={session && perfil ? <HabitTracker perfil={perfil} /> : <Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   )
