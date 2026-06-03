@@ -4,6 +4,13 @@ import { supabase } from '../lib/supabase'
 
 const MOMENTOS = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena', 'Pre-entreno', 'Post-entreno', 'Colación']
 
+// 🆕 Límite de generaciones de IA por mes
+const LIMITE_IA_MES = 40
+function inicioDeMes() {
+  const d = new Date()
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString()
+}
+
 const ALIMENTOS_RAPIDOS = [
   // 🍗 PROTEÍNAS — Carnes
   { nombre: 'Pechuga de pollo', calorias: 165, proteinas: 31, carbohidratos: 0, grasas: 4, categoria: '🍗 Proteínas' },
@@ -205,6 +212,7 @@ export default function MiPlanAlimentacion({ perfil }) {
   const [planesGenerados, setPlanesGenerados] = useState([])
   const [planGeneradoDetalle, setPlanGeneradoDetalle] = useState(null)
   const [guardandoPlan, setGuardandoPlan] = useState(false)
+  const [usosIaMes, setUsosIaMes] = useState(0)
 
   // Planes manuales
   const [modalDetalle, setModalDetalle] = useState(null)
@@ -220,7 +228,12 @@ export default function MiPlanAlimentacion({ perfil }) {
   const [modalNuevoPlan, setModalNuevoPlan] = useState(false)
   const [nuevoPlanForm, setNuevoPlanForm] = useState({ nombre: '', descripcion: '', calorias_objetivo: '' })
 
-  useEffect(() => { cargarPlanes() }, [])
+  useEffect(() => { cargarPlanes(); cargarUsosIa() }, [])
+
+  async function cargarUsosIa() {
+    const { count } = await supabase.from('uso_ia').select('*', { count: 'exact', head: true }).eq('alumno_id', perfil.id).eq('tipo', 'alimentacion').gte('created_at', inicioDeMes())
+    setUsosIaMes(count || 0)
+  }
 
   async function cargarPlanes() {
     setLoading(true)
@@ -247,6 +260,10 @@ export default function MiPlanAlimentacion({ perfil }) {
       alert('Seleccioná al menos 5 alimentos para generar los planes')
       return
     }
+    if (usosIaMes >= LIMITE_IA_MES) {
+      alert(`Llegaste al límite de ${LIMITE_IA_MES} generaciones de planes este mes. Se renueva el 1° del mes que viene.`)
+      return
+    }
     setGenerando(true)
     setPlanesGenerados([])
 
@@ -269,6 +286,11 @@ export default function MiPlanAlimentacion({ perfil }) {
       const clean = texto.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(clean)
       setPlanesGenerados(parsed.planes || [])
+      // 🆕 registrar el uso de IA del mes
+      try {
+        await supabase.from('uso_ia').insert({ alumno_id: perfil.id, tipo: 'alimentacion' })
+        setUsosIaMes(prev => prev + 1)
+      } catch (e) {}
     } catch (e) {
       alert('Error al generar los planes. Intentá de nuevo.')
     }
@@ -447,6 +469,14 @@ export default function MiPlanAlimentacion({ perfil }) {
                   ))}
                 </div>
 
+                {/* 🆕 Aviso de límite mensual */}
+                <div style={{ background: 'rgba(245,230,66,0.08)', border: '1px solid #f5e64230', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: '#f5e642', fontWeight: 700, marginBottom: 4 }}>⚠️ Elegí bien tus alimentos antes de generar</div>
+                  <div style={{ fontSize: 12, color: '#999', lineHeight: 1.5 }}>
+                    Tenés {LIMITE_IA_MES} generaciones de planes por mes. Te quedan <strong style={{ color: '#4ade80' }}>{Math.max(0, LIMITE_IA_MES - usosIaMes)}</strong> este mes.
+                  </div>
+                </div>
+
                 <label style={s.label}>Calorías objetivo por día</label>
                 <input style={{ ...s.input, marginBottom: 16 }} type="number" placeholder="Ej: 2000" value={caloriasObjetivo} onChange={e => setCaloriasObjetivo(e.target.value)} />
 
@@ -488,11 +518,11 @@ export default function MiPlanAlimentacion({ perfil }) {
                 )}
 
                 <button
-                  style={{ ...s.btnFull, background: generando ? '#333' : '#4ade80', color: generando ? '#888' : '#000', fontSize: 16, padding: '16px' }}
+                  style={{ ...s.btnFull, background: (generando || usosIaMes >= LIMITE_IA_MES) ? '#333' : '#4ade80', color: (generando || usosIaMes >= LIMITE_IA_MES) ? '#888' : '#000', fontSize: 16, padding: '16px' }}
                   onClick={generarPlanesIA}
-                  disabled={generando || alimentosSeleccionados.length < 5}
+                  disabled={generando || alimentosSeleccionados.length < 5 || usosIaMes >= LIMITE_IA_MES}
                 >
-                  {generando ? '🤖 Generando tus 7 planes...' : `🤖 Generar 7 planes (${alimentosSeleccionados.length} alimentos)`}
+                  {generando ? '🤖 Generando tus 7 planes...' : usosIaMes >= LIMITE_IA_MES ? `Límite mensual alcanzado (${LIMITE_IA_MES})` : `🤖 Generar 7 planes (${alimentosSeleccionados.length} alimentos)`}
                 </button>
                 {alimentosSeleccionados.length < 5 && <div style={{ textAlign: 'center', fontSize: 12, color: '#555', marginTop: 8 }}>Seleccioná al menos 5 alimentos</div>}
               </>
