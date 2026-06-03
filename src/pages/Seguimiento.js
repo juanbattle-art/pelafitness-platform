@@ -214,6 +214,12 @@ export default function Seguimiento({ perfil }) {
   const [showCalc, setShowCalc] = useState(false)
   const [calcForm, setCalcForm] = useState({ edad: '', sexo: 'hombre', peso: '', altura: '', actividad: 'moderado', objetivo: 'bajar de peso' })
 
+  // 🆕 estado para cargar un plan de Mi Alimentación al diario
+  const [showCargarPlan, setShowCargarPlan] = useState(false)
+  const [planesDisponibles, setPlanesDisponibles] = useState([])
+  const [cargandoPlanes, setCargandoPlanes] = useState(false)
+  const [aplicandoPlan, setAplicandoPlan] = useState(false)
+
   // 🆕 estado para modal de producto custom
   const [showCustomModal, setShowCustomModal] = useState(false)
   const [customForm, setCustomForm] = useState({
@@ -563,6 +569,45 @@ export default function Seguimiento({ perfil }) {
 
   async function eliminarComida(id) { await supabase.from('registros_comidas').delete().eq('id', id); cargarTodo() }
 
+  // 🆕 Abre el modal y trae los planes que el alumno ya armó en Mi Alimentación
+  async function abrirCargarPlan() {
+    setShowCargarPlan(true)
+    setCargandoPlanes(true)
+    const { data } = await supabase.from('planes_alimentacion').select('*').eq('alumno_id', alumnoIdActual).order('created_at', { ascending: false })
+    setPlanesDisponibles(data || [])
+    setCargandoPlanes(false)
+  }
+
+  // 🆕 Carga TODO un plan al diario del día, cada comida en su momento
+  async function aplicarPlanAlDia(plan) {
+    if (!window.confirm(`¿Cargar "${plan.nombre}" en el día? Se van a sumar sus comidas a tu diario.`)) return
+    setAplicandoPlan(true)
+    const momentosValidos = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena', 'Snack']
+    const mapMomento = (m) => momentosValidos.includes(m) ? m : 'Snack'
+    const { data: comidasPlan } = await supabase.from('plan_comidas').select('*, plan_comida_items(*)').eq('plan_id', plan.id).order('orden')
+    const inserts = []
+    for (const comida of (comidasPlan || [])) {
+      for (const item of (comida.plan_comida_items || [])) {
+        inserts.push({
+          alumno_id: alumnoIdActual,
+          fecha,
+          momento: mapMomento(comida.momento),
+          nombre_manual: `${item.nombre}${item.cantidad_gramos ? ` - ${item.cantidad_gramos}g` : ''}`,
+          calorias: item.calorias || 0,
+          proteinas: item.proteinas || 0,
+          carbohidratos: item.carbohidratos || 0,
+          grasas: item.grasas || 0,
+          gramos: item.cantidad_gramos || 0
+        })
+      }
+    }
+    if (inserts.length > 0) { await supabase.from('registros_comidas').insert(inserts) }
+    setAplicandoPlan(false)
+    setShowCargarPlan(false)
+    setTab('diario')
+    setMsg(`✅ Plan cargado (${inserts.length} alimentos)`); cargarTodo(); setTimeout(() => setMsg(''), 2500)
+  }
+
   async function toggleVaso(i) {
     const nuevos = i + 1 === vasosHoy ? i : i + 1
     const { data: existing } = await supabase.from('registros_agua').select('*').eq('alumno_id', alumnoIdActual).eq('fecha', fecha).maybeSingle()
@@ -723,6 +768,12 @@ export default function Seguimiento({ perfil }) {
 
         {tab === 'diario' && (
           <div>
+            <button
+              onClick={abrirCargarPlan}
+              style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid #4ade8040', borderRadius: 10, padding: '14px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%', marginBottom: 14 }}
+            >
+              📋 Cargar uno de mis planes al día
+            </button>
             {totalCal > metas.calorias ? (
               <div style={{ background: '#111', borderRadius: 12, border: '1px solid rgba(255,77,77,0.3)', padding: 18, marginBottom: 14, textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: '#ff4d4d', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>🚨 Te pasaste por</div>
@@ -867,6 +918,7 @@ export default function Seguimiento({ perfil }) {
           <div style={{ position: 'fixed', inset: 0, zIndex: 94 }} onClick={() => setFabOpen(false)} />
           <div style={s.fabMenu}>
             <button style={s.fabItem} onClick={() => { setFabOpen(false); abrirBuscador('Desayuno') }}>🔍 Buscar alimento</button>
+            <button style={s.fabItem} onClick={() => { setFabOpen(false); abrirCargarPlan() }}>📋 Cargar un plan</button>
             <button style={s.fabItem} onClick={() => { setFabOpen(false); setShowPesoModal(true) }}>⚖️ Registrar peso</button>
             <button style={s.fabItem} onClick={() => { setFabOpen(false); setShowEjercicioModal(true) }}>🏋️ Agregar ejercicio</button>
             <button style={s.fabItem} onClick={() => { setFabOpen(false); abrirModalMetas() }}>🎯 Editar metas</button>
@@ -1112,6 +1164,40 @@ export default function Seguimiento({ perfil }) {
             <button style={{ ...s.btn, opacity: macrosOk ? 1 : 0.5, cursor: macrosOk ? 'pointer' : 'not-allowed' }} onClick={() => { if (macrosOk) guardarMetas() }}>
               {macrosOk ? 'Guardar metas' : 'Ajustá los macros para guardar'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🆕 MODAL: cargar un plan de Mi Alimentación al diario */}
+      {showCargarPlan && (
+        <div style={s.porcionModal} onClick={() => setShowCargarPlan(false)}>
+          <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
+            <div style={s.porcionHeader}>
+              <div>
+                <div style={s.porcionNombre}>📋 Cargar un plan</div>
+                <div style={s.porcionMarca}>Se suma al diario del día seleccionado</div>
+              </div>
+              <button style={s.searchClose} onClick={() => setShowCargarPlan(false)}>✕</button>
+            </div>
+            {cargandoPlanes ? (
+              <div style={s.loader}>Cargando tus planes...</div>
+            ) : planesDisponibles.length === 0 ? (
+              <div style={s.empty}>Todavía no tenés planes.<br/>Creá uno en "Mi Alimentación".</div>
+            ) : (
+              <>
+                {planesDisponibles.map(plan => (
+                  <div key={plan.id} style={{ ...s.unidadOption(false), display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: aplicandoPlan ? 0.5 : 1 }} onClick={() => { if (!aplicandoPlan) aplicarPlanAlDia(plan) }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#4ade80' }}>{plan.nombre}</div>
+                      {plan.descripcion && <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{plan.descripcion}</div>}
+                      {plan.calorias_objetivo && <div style={{ fontSize: 12, color: '#f5e642', marginTop: 4 }}>🎯 {plan.calorias_objetivo} kcal</div>}
+                    </div>
+                    <div style={{ color: '#4ade80', fontSize: 22, fontWeight: 700 }}>＋</div>
+                  </div>
+                ))}
+                {aplicandoPlan && <div style={s.loader}>Cargando plan al día...</div>}
+              </>
+            )}
           </div>
         </div>
       )}
