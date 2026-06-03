@@ -8,7 +8,7 @@ const TIPO_CONFIG = {
   mentalidad: { emoji: '🧠', color: '#818cf8', label: 'Mentalidad' },
 }
 
-const PDF_URL = 'https://pelafitness-platform.onrender.com/guia-quema-grasa.pdf'
+const PDF_URL = '/guia.pdf'
 
 const s = {
   page: { minHeight: '100vh', background: '#0a0a0a' },
