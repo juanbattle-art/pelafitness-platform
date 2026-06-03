@@ -210,6 +210,10 @@ export default function Seguimiento({ perfil }) {
   const [ejercicioInput, setEjercicioInput] = useState({ ejercicio: '', series: '', repeticiones: '', peso_kg: '', notas: '' })
   const [metasForm, setMetasForm] = useState({ calorias: '', proteinas: '', carbohidratos: '', grasas: '' })
 
+  // 🆕 estado para la calculadora de macros (dentro del modal de metas)
+  const [showCalc, setShowCalc] = useState(false)
+  const [calcForm, setCalcForm] = useState({ edad: '', sexo: 'hombre', peso: '', altura: '', actividad: 'moderado', objetivo: 'bajar de peso' })
+
   // 🆕 estado para modal de producto custom
   const [showCustomModal, setShowCustomModal] = useState(false)
   const [customForm, setCustomForm] = useState({
@@ -603,6 +607,23 @@ export default function Seguimiento({ perfil }) {
     if (existing) { await supabase.from('metas_nutricionales').update(nuevas).eq('alumno_id', alumnoIdActual) }
     else { await supabase.from('metas_nutricionales').insert(nuevas) }
     setMetas(nuevas); setShowMetasModal(false); setMsg('Metas actualizadas ✓'); cargarTodo(); setTimeout(() => setMsg(''), 2000)
+  }
+
+  // 🆕 calcula calorías y macros desde los datos del alumno y los carga en el formulario de metas
+  function calcularMacrosAuto() {
+    const p = parseFloat(calcForm.peso), a = parseFloat(calcForm.altura), e = parseInt(calcForm.edad)
+    if (!p || !a || !e) { setMsg('⚠️ Completá edad, peso y altura'); setTimeout(() => setMsg(''), 2500); return }
+    const bmr = calcForm.sexo === 'hombre' ? 10 * p + 6.25 * a - 5 * e + 5 : 10 * p + 6.25 * a - 5 * e - 161
+    const factores = { sedentario: 1.2, ligero: 1.375, moderado: 1.55, activo: 1.725, muy_activo: 1.9 }
+    const mults = { 'bajar de peso': 0.80, 'tonificar': 0.88, 'mantener': 1.0, 'ganar músculo': 1.10 }
+    const tdee = bmr * (factores[calcForm.actividad] || 1.55)
+    const calorias = Math.round(tdee * (mults[calcForm.objetivo] || 1))
+    const proteinas = Math.round(p * 2)
+    let grasas = Math.round(p * 1)
+    const minG = Math.round(p * 0.6); if (grasas < minG) grasas = minG
+    let carbohidratos = Math.round((calorias - proteinas * 4 - grasas * 9) / 4); if (carbohidratos < 0) carbohidratos = 0
+    setMetasForm({ calorias, proteinas, carbohidratos, grasas })
+    setMsg('✅ Macros calculados. Revisá y guardá abajo.'); setTimeout(() => setMsg(''), 2500)
   }
 
   const calMacros = (parseFloat(metasForm.proteinas) || 0) * 4 + (parseFloat(metasForm.carbohidratos) || 0) * 4 + (parseFloat(metasForm.grasas) || 0) * 9
@@ -1017,6 +1038,63 @@ export default function Seguimiento({ perfil }) {
               <button style={s.searchClose} onClick={() => setShowMetasModal(false)}>✕</button>
             </div>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 14 }}>Tu coach te puede pasar estos valores.</div>
+
+            {/* 🆕 CALCULADORA DE MACROS */}
+            <button
+              style={{ ...s.btnSm, width: '100%', padding: '12px', marginBottom: 14, fontSize: 13, background: showCalc ? 'rgba(245,230,66,0.15)' : '#1a1a1a' }}
+              onClick={() => setShowCalc(!showCalc)}
+            >
+              🧮 {showCalc ? 'Ocultar calculadora' : 'Calcular mis macros automáticamente'}
+            </button>
+
+            {showCalc && (
+              <div style={{ background: '#0d0d0d', border: '1px solid #f5e64240', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: '#888', marginBottom: 12 }}>Completá tus datos y la app calcula tus calorías y macros.</div>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={s.label}>Edad</label>
+                    <input style={s.porcionInput} type="number" value={calcForm.edad} onChange={e => setCalcForm({ ...calcForm, edad: e.target.value })} placeholder="28" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={s.label}>Sexo</label>
+                    <select style={{ ...s.porcionSelect, width: '100%' }} value={calcForm.sexo} onChange={e => setCalcForm({ ...calcForm, sexo: e.target.value })}>
+                      <option value="hombre">Hombre</option>
+                      <option value="mujer">Mujer</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={s.label}>Peso (kg)</label>
+                    <input style={s.porcionInput} type="number" value={calcForm.peso} onChange={e => setCalcForm({ ...calcForm, peso: e.target.value })} placeholder="75" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={s.label}>Altura (cm)</label>
+                    <input style={s.porcionInput} type="number" value={calcForm.altura} onChange={e => setCalcForm({ ...calcForm, altura: e.target.value })} placeholder="175" />
+                  </div>
+                </div>
+                <label style={s.label}>Actividad</label>
+                <select style={{ ...s.porcionSelect, width: '100%', marginBottom: 12 }} value={calcForm.actividad} onChange={e => setCalcForm({ ...calcForm, actividad: e.target.value })}>
+                  <option value="sedentario">Sedentario (poco o nada)</option>
+                  <option value="ligero">Ligero (1-3 días)</option>
+                  <option value="moderado">Moderado (3-5 días)</option>
+                  <option value="activo">Activo (6-7 días)</option>
+                  <option value="muy_activo">Muy activo (físico + entreno)</option>
+                </select>
+                <label style={s.label}>Objetivo</label>
+                <select style={{ ...s.porcionSelect, width: '100%', marginBottom: 14 }} value={calcForm.objetivo} onChange={e => setCalcForm({ ...calcForm, objetivo: e.target.value })}>
+                  <option value="bajar de peso">Bajar de peso</option>
+                  <option value="tonificar">Tonificar</option>
+                  <option value="mantener">Mantener</option>
+                  <option value="ganar músculo">Ganar músculo</option>
+                </select>
+                <button style={{ ...s.btn, background: '#4ade80' }} onClick={calcularMacrosAuto}>Calcular y completar ↓</button>
+                <div style={{ fontSize: 10, color: '#caa46a', marginTop: 10, lineHeight: 1.5 }}>
+                  ⚠️ Es una estimación. Sostené tus números ~2 semanas y ajustá según tu progreso. Para bajar de grasa no uses déficits agresivos. Ante dudas, consultá a un profesional de la salud.
+                </div>
+              </div>
+            )}
+
             <label style={s.label}>🔥 Calorías (kcal)</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.calorias} onChange={e => setMetasForm({ ...metasForm, calorias: e.target.value })} placeholder="2000" />
             <label style={s.label}>🥩 Proteínas (g)</label>
