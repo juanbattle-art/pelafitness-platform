@@ -158,6 +158,7 @@ const s = {
   btnGhost: { background: 'none', color: '#888', border: '1px solid #222', borderRadius: 8, padding: '10px 16px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' },
   btnGreen: { background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040', borderRadius: 8, padding: '14px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%' },
   input: { width: '100%', background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, padding: '10px 14px', color: '#f0f0f0', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' },
+  textarea: { width: '100%', background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, padding: '10px 14px', color: '#f0f0f0', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', resize: 'vertical', minHeight: 80 },
   label: { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#555', marginBottom: 6, marginTop: 12 },
   modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 200, display: 'flex', alignItems: 'flex-end' },
   modalContent: { background: '#111', width: '100%', maxHeight: '92vh', borderRadius: '16px 16px 0 0', overflowY: 'auto', padding: 20 },
@@ -182,6 +183,66 @@ function calcTotales(comidas) {
   }, { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 })
 }
 
+// Busca el alimento ignorando mayusculas y espacios
+function buscarAlimento(nombre) {
+  const nombreLimpio = nombre.toLowerCase().trim()
+  return ALIMENTOS_RAPIDOS.find(a => a.nombre.toLowerCase().trim() === nombreLimpio)
+}
+
+// Ajusta gramos y recalcula macros para llegar exacto a la meta calorica
+function ajustarCaloriasExactas(plan, metaCalorias) {
+  // Paso 1: recalcular macros reales de cada item segun gramos actuales
+  const planReal = {
+    ...plan,
+    comidas: plan.comidas.map(comida => ({
+      ...comida,
+      items: comida.items.map(item => {
+        const alimentoReal = buscarAlimento(item.nombre)
+        if (!alimentoReal) return item
+        const factor = item.cantidad_gramos / 100
+        return {
+          ...item,
+          calorias: Math.round(alimentoReal.calorias * factor),
+          proteinas: Math.round(alimentoReal.proteinas * factor * 10) / 10,
+          carbohidratos: Math.round(alimentoReal.carbohidratos * factor * 10) / 10,
+          grasas: Math.round(alimentoReal.grasas * factor * 10) / 10,
+        }
+      })
+    }))
+  }
+
+  // Paso 2: sumar calorias totales
+  const caloriasActuales = planReal.comidas
+    .flatMap(c => c.items)
+    .reduce((s, it) => s + (it.calorias || 0), 0)
+
+  if (caloriasActuales === 0) return planReal
+
+  // Paso 3: calcular escala y ajustar todos los gramos proporcionalmente
+  const escala = metaCalorias / caloriasActuales
+
+  return {
+    ...planReal,
+    comidas: planReal.comidas.map(comida => ({
+      ...comida,
+      items: comida.items.map(item => {
+        const alimentoReal = buscarAlimento(item.nombre)
+        const gramosAjustados = Math.round(item.cantidad_gramos * escala)
+        if (!alimentoReal) return { ...item, cantidad_gramos: gramosAjustados }
+        const factor = gramosAjustados / 100
+        return {
+          ...item,
+          cantidad_gramos: gramosAjustados,
+          calorias: Math.round(alimentoReal.calorias * factor),
+          proteinas: Math.round(alimentoReal.proteinas * factor * 10) / 10,
+          carbohidratos: Math.round(alimentoReal.carbohidratos * factor * 10) / 10,
+          grasas: Math.round(alimentoReal.grasas * factor * 10) / 10,
+        }
+      })
+    }))
+  }
+}
+
 export default function MiPlanAlimentacion({ perfil }) {
   const navigate = useNavigate()
   const [tab, setTab] = useState('planes')
@@ -189,6 +250,7 @@ export default function MiPlanAlimentacion({ perfil }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
+  // Generador IA
   const [alimentosSeleccionados, setAlimentosSeleccionados] = useState([])
   const [categoriaFiltro, setCategoriaFiltro] = useState('Todos')
   const [caloriasObjetivo, setCaloriasObjetivo] = useState('')
@@ -197,7 +259,9 @@ export default function MiPlanAlimentacion({ perfil }) {
   const [planGenerado, setPlanGenerado] = useState(null)
   const [guardandoPlan, setGuardandoPlan] = useState(false)
   const [usosIaMes, setUsosIaMes] = useState(0)
+  const [notasIA, setNotasIA] = useState('')
 
+  // Planes manuales
   const [modalDetalle, setModalDetalle] = useState(null)
   const [comidasPlan, setComidasPlan] = useState([])
   const [modalAgregarComida, setModalAgregarComida] = useState(false)
@@ -210,6 +274,8 @@ export default function MiPlanAlimentacion({ perfil }) {
   const [alimentoForm, setAlimentoForm] = useState({ nombre: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', cantidad_gramos: 100 })
   const [modalNuevoPlan, setModalNuevoPlan] = useState(false)
   const [nuevoPlanForm, setNuevoPlanForm] = useState({ nombre: '', descripcion: '', calorias_objetivo: '' })
+  const [editandoDescripcion, setEditandoDescripcion] = useState(false)
+  const [descripcionEdit, setDescripcionEdit] = useState('')
 
   useEffect(() => { cargarPlanes(); cargarUsosIa() }, [])
 
@@ -238,61 +304,6 @@ export default function MiPlanAlimentacion({ perfil }) {
     )
   }
 
-  function ajustarCaloriasExactas(plan, metaCalorias) {
-    // 1. Recalcular macros de cada item usando los datos reales de ALIMENTOS_RAPIDOS
-    const planConMacrosReales = {
-      ...plan,
-      comidas: plan.comidas.map(comida => ({
-        ...comida,
-        items: comida.items.map(item => {
-          const alimentoReal = ALIMENTOS_RAPIDOS.find(a => a.nombre === item.nombre)
-          if (!alimentoReal) return item
-          const factor = item.cantidad_gramos / 100
-          return {
-            ...item,
-            calorias: Math.round(alimentoReal.calorias * factor),
-            proteinas: Math.round(alimentoReal.proteinas * factor * 10) / 10,
-            carbohidratos: Math.round(alimentoReal.carbohidratos * factor * 10) / 10,
-            grasas: Math.round(alimentoReal.grasas * factor * 10) / 10,
-          }
-        })
-      }))
-    }
-
-    // 2. Sumar calorías totales actuales
-    const todosItems = planConMacrosReales.comidas.flatMap(c => c.items)
-    const caloriasActuales = todosItems.reduce((s, it) => s + it.calorias, 0)
-
-    if (caloriasActuales === 0) return planConMacrosReales
-
-    // 3. Calcular factor de escala para llegar a la meta
-    const escala = metaCalorias / caloriasActuales
-
-    // 4. Escalar los gramos y recalcular macros de cada item
-    const planAjustado = {
-      ...planConMacrosReales,
-      comidas: planConMacrosReales.comidas.map(comida => ({
-        ...comida,
-        items: comida.items.map(item => {
-          const alimentoReal = ALIMENTOS_RAPIDOS.find(a => a.nombre === item.nombre)
-          const gramosAjustados = Math.round(item.cantidad_gramos * escala)
-          if (!alimentoReal) return { ...item, cantidad_gramos: gramosAjustados }
-          const factor = gramosAjustados / 100
-          return {
-            ...item,
-            cantidad_gramos: gramosAjustados,
-            calorias: Math.round(alimentoReal.calorias * factor),
-            proteinas: Math.round(alimentoReal.proteinas * factor * 10) / 10,
-            carbohidratos: Math.round(alimentoReal.carbohidratos * factor * 10) / 10,
-            grasas: Math.round(alimentoReal.grasas * factor * 10) / 10,
-          }
-        })
-      }))
-    }
-
-    return planAjustado
-  }
-
   async function generarPlanIA() {
     if (alimentosSeleccionados.length < 5) {
       alert('Seleccioná al menos 5 alimentos para generar el plan')
@@ -306,9 +317,10 @@ export default function MiPlanAlimentacion({ perfil }) {
     setPlanGenerado(null)
 
     const metaCalorias = parseInt(caloriasObjetivo) || 2000
-    const listaAlimentos = alimentosSeleccionados.map(a => a.nombre).join(', ')
+    // Mandamos los nombres EXACTOS de la lista para que la IA los devuelva igual
+    const listaAlimentos = alimentosSeleccionados.map(a => `"${a.nombre}"`).join(', ')
 
-    const prompt = `Eres nutricionista deportivo. Crea 1 plan de comida diaria usando SOLO estos alimentos: ${listaAlimentos}. Objetivo: ${objetivo}. Meta calorica: ${metaCalorias} kcal/dia. Usa gramos variados como 123g, 87g, 215g (nunca multiplos exactos de 50). Responde SOLO JSON valido sin texto ni markdown: {"nombre":"Plan Dia 1","comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6}]},{"momento":"Almuerzo","items":[{"nombre":"Pechuga de pollo","cantidad_gramos":180,"calorias":297,"proteinas":56,"carbohidratos":0,"grasas":7}]},{"momento":"Merienda","items":[{"nombre":"Yogur griego natural","cantidad_gramos":200,"calorias":118,"proteinas":20,"carbohidratos":8,"grasas":0}]},{"momento":"Cena","items":[{"nombre":"Merluza","cantidad_gramos":200,"calorias":164,"proteinas":36,"carbohidratos":0,"grasas":2}]}]}`
+    const prompt = `Eres nutricionista deportivo. Crea 1 plan de comida diaria usando SOLO estos alimentos (usa los nombres EXACTAMENTE como aparecen): ${listaAlimentos}. Objetivo: ${objetivo}. Meta calorica: ${metaCalorias} kcal/dia. Usa gramos variados como 123g, 87g, 215g. Responde SOLO JSON valido sin texto ni markdown: {"nombre":"Plan Dia 1","comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6}]},{"momento":"Almuerzo","items":[{"nombre":"Pechuga de pollo","cantidad_gramos":180,"calorias":297,"proteinas":56,"carbohidratos":0,"grasas":7}]},{"momento":"Merienda","items":[{"nombre":"Yogur griego natural","cantidad_gramos":200,"calorias":118,"proteinas":20,"carbohidratos":8,"grasas":0}]},{"momento":"Cena","items":[{"nombre":"Merluza","cantidad_gramos":200,"calorias":164,"proteinas":36,"carbohidratos":0,"grasas":2}]}]}`
 
     try {
       const response = await fetch('https://zdmoxnapheaizbinxvqr.supabase.co/functions/v1/quick-responder', {
@@ -323,11 +335,10 @@ export default function MiPlanAlimentacion({ perfil }) {
       const texto = data.content?.[0]?.text || ''
       const clean = texto.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(clean)
-
-      // Ajustar calorías exactas en el frontend
+      // Ajuste calorico exacto en el frontend
       const planAjustado = ajustarCaloriasExactas(parsed, metaCalorias)
       setPlanGenerado(planAjustado)
-
+      setNotasIA('')
       try {
         await supabase.from('uso_ia').insert({ alumno_id: perfil.id, tipo: 'alimentacion' })
         setUsosIaMes(prev => prev + 1)
@@ -340,11 +351,13 @@ export default function MiPlanAlimentacion({ perfil }) {
 
   async function guardarPlanGenerado(plan) {
     setGuardandoPlan(true)
+    const totalesItems = plan.comidas?.flatMap(c => c.items) || []
+    const calTotales = Math.round(totalesItems.reduce((s, it) => s + (it.calorias || 0), 0))
     const { data: nuevoPlan } = await supabase.from('planes_alimentacion').insert({
       alumno_id: perfil.id,
       nombre: plan.nombre,
-      descripcion: `Generado por IA · Objetivo: ${objetivo}`,
-      calorias_objetivo: null
+      descripcion: notasIA || `Generado por IA · Objetivo: ${objetivo}`,
+      calorias_objetivo: calTotales
     }).select().single()
 
     if (nuevoPlan) {
@@ -392,6 +405,18 @@ export default function MiPlanAlimentacion({ perfil }) {
     await supabase.from('planes_alimentacion').delete().eq('id', id)
     setPlanes(prev => prev.filter(p => p.id !== id))
     setModalDetalle(null)
+  }
+
+  async function guardarDescripcion() {
+    if (!modalDetalle) return
+    setSaving(true)
+    const { data } = await supabase.from('planes_alimentacion').update({ descripcion: descripcionEdit }).eq('id', modalDetalle.id).select().single()
+    if (data) {
+      setModalDetalle(data)
+      setPlanes(prev => prev.map(p => p.id === data.id ? data : p))
+      setEditandoDescripcion(false)
+    }
+    setSaving(false)
   }
 
   async function agregarComida() {
@@ -472,7 +497,7 @@ export default function MiPlanAlimentacion({ perfil }) {
                 <div>Todavía no tenés planes.<br />Creá uno manual o generá uno con IA.</div>
               </div>
             ) : planes.map(p => (
-              <div key={p.id} style={s.card} onClick={() => { setModalDetalle(p); cargarComidasPlan(p.id) }}>
+              <div key={p.id} style={s.card} onClick={() => { setModalDetalle(p); cargarComidasPlan(p.id); setEditandoDescripcion(false) }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 1, color: '#4ade80' }}>{p.nombre}</div>
@@ -496,7 +521,7 @@ export default function MiPlanAlimentacion({ perfil }) {
                   <div style={{ fontSize: 13, color: '#888', lineHeight: 1.6 }}>
                     1. Seleccioná los alimentos que te gustan<br />
                     2. Poné tus calorías objetivo<br />
-                    3. La IA te arma un plan de comida<br />
+                    3. La IA te arma un plan con calorías exactas<br />
                     4. Guardalo si te gusta o generá otro
                   </div>
                 </div>
@@ -610,6 +635,15 @@ export default function MiPlanAlimentacion({ perfil }) {
                   </div>
                 ))}
 
+                {/* Notas / descripcion antes de guardar */}
+                <label style={s.label}>Notas del plan (opcional)</label>
+                <textarea
+                  style={{ ...s.textarea, marginBottom: 16 }}
+                  placeholder="Ej: Plan para semana de déficit, evitar azúcar, etc."
+                  value={notasIA}
+                  onChange={e => setNotasIA(e.target.value)}
+                />
+
                 <button style={{ ...s.btnFull, background: '#4ade80', color: '#000', marginBottom: 10 }} onClick={() => guardarPlanGenerado(planGenerado)} disabled={guardandoPlan}>
                   {guardandoPlan ? 'Guardando...' : '💾 Guardar este plan'}
                 </button>
@@ -630,8 +664,8 @@ export default function MiPlanAlimentacion({ perfil }) {
             </div>
             <label style={s.label}>Nombre del plan</label>
             <input style={s.input} placeholder="Ej: Plan Déficit Semana 1" value={nuevoPlanForm.nombre} onChange={e => setNuevoPlanForm(p => ({ ...p, nombre: e.target.value }))} />
-            <label style={s.label}>Descripción (opcional)</label>
-            <input style={s.input} placeholder="Ej: Para bajar de grasa" value={nuevoPlanForm.descripcion} onChange={e => setNuevoPlanForm(p => ({ ...p, descripcion: e.target.value }))} />
+            <label style={s.label}>Descripción / Notas (opcional)</label>
+            <textarea style={s.textarea} placeholder="Ej: Para bajar de grasa, sin lácteos, etc." value={nuevoPlanForm.descripcion} onChange={e => setNuevoPlanForm(p => ({ ...p, descripcion: e.target.value }))} />
             <label style={s.label}>Calorías objetivo (opcional)</label>
             <input style={s.input} type="number" placeholder="Ej: 2000" value={nuevoPlanForm.calorias_objetivo} onChange={e => setNuevoPlanForm(p => ({ ...p, calorias_objetivo: e.target.value }))} />
             <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
@@ -644,14 +678,45 @@ export default function MiPlanAlimentacion({ perfil }) {
 
       {/* MODAL DETALLE PLAN MANUAL */}
       {modalDetalle && (
-        <div style={s.modal} onClick={() => setModalDetalle(null)}>
+        <div style={s.modal} onClick={() => { setModalDetalle(null); setEditandoDescripcion(false) }}>
           <div style={{ ...s.modalContent, maxHeight: '95vh' }} onClick={e => e.stopPropagation()}>
             <div style={s.modalHeader}>
               <div>
                 <div style={s.modalTitle}>{modalDetalle.nombre}</div>
-                {modalDetalle.descripcion && <div style={{ fontSize: 12, color: '#666' }}>{modalDetalle.descripcion}</div>}
+                {modalDetalle.calorias_objetivo && <div style={{ fontSize: 12, color: '#f5e642' }}>🎯 {modalDetalle.calorias_objetivo} kcal</div>}
               </div>
-              <button style={s.closeBtn} onClick={() => setModalDetalle(null)}>✕</button>
+              <button style={s.closeBtn} onClick={() => { setModalDetalle(null); setEditandoDescripcion(false) }}>✕</button>
+            </div>
+
+            {/* Seccion descripcion editable */}
+            <div style={{ background: '#0d0d0d', border: '1px solid #222', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#555' }}>📝 Descripción / Notas</div>
+                {!editandoDescripcion && (
+                  <button style={s.btnSm} onClick={() => { setEditandoDescripcion(true); setDescripcionEdit(modalDetalle.descripcion || '') }}>
+                    ✏️ Editar
+                  </button>
+                )}
+              </div>
+              {editandoDescripcion ? (
+                <>
+                  <textarea
+                    style={{ ...s.textarea, marginBottom: 10 }}
+                    placeholder="Ej: Plan para semana de déficit, evitar azúcar, etc."
+                    value={descripcionEdit}
+                    onChange={e => setDescripcionEdit(e.target.value)}
+                    autoFocus
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button style={s.btnGhost} onClick={() => setEditandoDescripcion(false)}>Cancelar</button>
+                    <button style={{ ...s.btn, flex: 1 }} onClick={guardarDescripcion} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 13, color: modalDetalle.descripcion ? '#aaa' : '#444', fontStyle: modalDetalle.descripcion ? 'normal' : 'italic' }}>
+                  {modalDetalle.descripcion || 'Sin descripción. Tocá Editar para agregar notas.'}
+                </div>
+              )}
             </div>
 
             {comidasPlan.length > 0 && (
