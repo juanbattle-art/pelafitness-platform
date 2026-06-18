@@ -238,6 +238,61 @@ export default function MiPlanAlimentacion({ perfil }) {
     )
   }
 
+  function ajustarCaloriasExactas(plan, metaCalorias) {
+    // 1. Recalcular macros de cada item usando los datos reales de ALIMENTOS_RAPIDOS
+    const planConMacrosReales = {
+      ...plan,
+      comidas: plan.comidas.map(comida => ({
+        ...comida,
+        items: comida.items.map(item => {
+          const alimentoReal = ALIMENTOS_RAPIDOS.find(a => a.nombre === item.nombre)
+          if (!alimentoReal) return item
+          const factor = item.cantidad_gramos / 100
+          return {
+            ...item,
+            calorias: Math.round(alimentoReal.calorias * factor),
+            proteinas: Math.round(alimentoReal.proteinas * factor * 10) / 10,
+            carbohidratos: Math.round(alimentoReal.carbohidratos * factor * 10) / 10,
+            grasas: Math.round(alimentoReal.grasas * factor * 10) / 10,
+          }
+        })
+      }))
+    }
+
+    // 2. Sumar calorías totales actuales
+    const todosItems = planConMacrosReales.comidas.flatMap(c => c.items)
+    const caloriasActuales = todosItems.reduce((s, it) => s + it.calorias, 0)
+
+    if (caloriasActuales === 0) return planConMacrosReales
+
+    // 3. Calcular factor de escala para llegar a la meta
+    const escala = metaCalorias / caloriasActuales
+
+    // 4. Escalar los gramos y recalcular macros de cada item
+    const planAjustado = {
+      ...planConMacrosReales,
+      comidas: planConMacrosReales.comidas.map(comida => ({
+        ...comida,
+        items: comida.items.map(item => {
+          const alimentoReal = ALIMENTOS_RAPIDOS.find(a => a.nombre === item.nombre)
+          const gramosAjustados = Math.round(item.cantidad_gramos * escala)
+          if (!alimentoReal) return { ...item, cantidad_gramos: gramosAjustados }
+          const factor = gramosAjustados / 100
+          return {
+            ...item,
+            cantidad_gramos: gramosAjustados,
+            calorias: Math.round(alimentoReal.calorias * factor),
+            proteinas: Math.round(alimentoReal.proteinas * factor * 10) / 10,
+            carbohidratos: Math.round(alimentoReal.carbohidratos * factor * 10) / 10,
+            grasas: Math.round(alimentoReal.grasas * factor * 10) / 10,
+          }
+        })
+      }))
+    }
+
+    return planAjustado
+  }
+
   async function generarPlanIA() {
     if (alimentosSeleccionados.length < 5) {
       alert('Seleccioná al menos 5 alimentos para generar el plan')
@@ -250,10 +305,10 @@ export default function MiPlanAlimentacion({ perfil }) {
     setGenerando(true)
     setPlanGenerado(null)
 
-    const calorias = caloriasObjetivo || 2000
+    const metaCalorias = parseInt(caloriasObjetivo) || 2000
     const listaAlimentos = alimentosSeleccionados.map(a => a.nombre).join(', ')
 
-  const prompt = `Eres nutricionista deportivo experto en calculos nutricionales. Crea 1 plan de comida diaria usando SOLO estos alimentos: ${listaAlimentos}. Objetivo: ${objetivo}. META CALORICA EXACTA: ${calorias} kcal (tolerancia maxima +-50 kcal). Ajusta los gramos de cada alimento para que la suma total sea exactamente ${calorias} kcal. Usa gramos exactos y variados como 123g, 187g, 234g, 78g (NUNCA multiplos de 50). Responde SOLO JSON valido sin texto ni markdown: {"nombre":"Plan Dia 1","comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6}]},{"momento":"Almuerzo","items":[{"nombre":"Pechuga de pollo","cantidad_gramos":180,"calorias":297,"proteinas":56,"carbohidratos":0,"grasas":7}]},{"momento":"Merienda","items":[{"nombre":"Yogur griego natural","cantidad_gramos":200,"calorias":118,"proteinas":20,"carbohidratos":8,"grasas":0}]},{"momento":"Cena","items":[{"nombre":"Merluza","cantidad_gramos":200,"calorias":164,"proteinas":36,"carbohidratos":0,"grasas":2}]}]}`
+    const prompt = `Eres nutricionista deportivo. Crea 1 plan de comida diaria usando SOLO estos alimentos: ${listaAlimentos}. Objetivo: ${objetivo}. Meta calorica: ${metaCalorias} kcal/dia. Usa gramos variados como 123g, 87g, 215g (nunca multiplos exactos de 50). Responde SOLO JSON valido sin texto ni markdown: {"nombre":"Plan Dia 1","comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6}]},{"momento":"Almuerzo","items":[{"nombre":"Pechuga de pollo","cantidad_gramos":180,"calorias":297,"proteinas":56,"carbohidratos":0,"grasas":7}]},{"momento":"Merienda","items":[{"nombre":"Yogur griego natural","cantidad_gramos":200,"calorias":118,"proteinas":20,"carbohidratos":8,"grasas":0}]},{"momento":"Cena","items":[{"nombre":"Merluza","cantidad_gramos":200,"calorias":164,"proteinas":36,"carbohidratos":0,"grasas":2}]}]}`
 
     try {
       const response = await fetch('https://zdmoxnapheaizbinxvqr.supabase.co/functions/v1/quick-responder', {
@@ -268,7 +323,11 @@ export default function MiPlanAlimentacion({ perfil }) {
       const texto = data.content?.[0]?.text || ''
       const clean = texto.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(clean)
-      setPlanGenerado(parsed)
+
+      // Ajustar calorías exactas en el frontend
+      const planAjustado = ajustarCaloriasExactas(parsed, metaCalorias)
+      setPlanGenerado(planAjustado)
+
       try {
         await supabase.from('uso_ia').insert({ alumno_id: perfil.id, tipo: 'alimentacion' })
         setUsosIaMes(prev => prev + 1)
