@@ -11,7 +11,6 @@ function inicioDeMes() {
 }
 
 const ALIMENTOS_RAPIDOS = [
-  // 🍗 PROTEÍNAS — Carnes
   { nombre: 'Pechuga de pollo', calorias: 165, proteinas: 31, carbohidratos: 0, grasas: 4, categoria: '🍗 Proteínas' },
   { nombre: 'Pata/muslo de pollo (sin piel)', calorias: 209, proteinas: 26, carbohidratos: 0, grasas: 11, categoria: '🍗 Proteínas' },
   { nombre: 'Carne magra de vaca', calorias: 180, proteinas: 28, carbohidratos: 0, grasas: 7, categoria: '🍗 Proteínas' },
@@ -26,7 +25,6 @@ const ALIMENTOS_RAPIDOS = [
   { nombre: 'Jamón cocido magro', calorias: 145, proteinas: 18, carbohidratos: 1, grasas: 7, categoria: '🍗 Proteínas' },
   { nombre: 'Jamón crudo', calorias: 195, proteinas: 26, carbohidratos: 0, grasas: 10, categoria: '🍗 Proteínas' },
   { nombre: 'Pavita/pavo', calorias: 135, proteinas: 29, carbohidratos: 0, grasas: 2, categoria: '🍗 Proteínas' },
-  // 🍗 PROTEÍNAS — Pescados y mariscos
   { nombre: 'Atún en lata al natural', calorias: 116, proteinas: 26, carbohidratos: 0, grasas: 1, categoria: '🍗 Proteínas' },
   { nombre: 'Atún en lata al aceite', calorias: 190, proteinas: 25, carbohidratos: 0, grasas: 10, categoria: '🍗 Proteínas' },
   { nombre: 'Salmón', calorias: 208, proteinas: 20, carbohidratos: 0, grasas: 13, categoria: '🍗 Proteínas' },
@@ -37,10 +35,8 @@ const ALIMENTOS_RAPIDOS = [
   { nombre: 'Sardina', calorias: 208, proteinas: 25, carbohidratos: 0, grasas: 11, categoria: '🍗 Proteínas' },
   { nombre: 'Caballa', calorias: 205, proteinas: 19, carbohidratos: 0, grasas: 14, categoria: '🍗 Proteínas' },
   { nombre: 'Camarones/langostinos', calorias: 99, proteinas: 24, carbohidratos: 0, grasas: 1, categoria: '🍗 Proteínas' },
-  // 🍗 PROTEÍNAS — Huevos
   { nombre: 'Huevo entero', calorias: 155, proteinas: 13, carbohidratos: 1, grasas: 11, categoria: '🍗 Proteínas' },
   { nombre: 'Clara de huevo', calorias: 52, proteinas: 11, carbohidratos: 1, grasas: 0, categoria: '🍗 Proteínas' },
-  // 🍗 PROTEÍNAS — Lácteos / quesos (UY)
   { nombre: 'Leche descremada', calorias: 35, proteinas: 3, carbohidratos: 5, grasas: 0, categoria: '🍗 Proteínas' },
   { nombre: 'Leche entera', calorias: 61, proteinas: 3, carbohidratos: 5, grasas: 3, categoria: '🍗 Proteínas' },
   { nombre: 'Leche semidescremada', calorias: 47, proteinas: 3, carbohidratos: 5, grasas: 2, categoria: '🍗 Proteínas' },
@@ -61,7 +57,6 @@ const ALIMENTOS_RAPIDOS = [
   { nombre: 'Queso Sbrinz / sardo (rallar)', calorias: 393, proteinas: 32, carbohidratos: 2, grasas: 29, categoria: '🍗 Proteínas' },
   { nombre: 'Queso Port Salut', calorias: 330, proteinas: 24, carbohidratos: 2, grasas: 26, categoria: '🍗 Proteínas' },
   { nombre: 'Queso parmesano', calorias: 392, proteinas: 35, carbohidratos: 3, grasas: 26, categoria: '🍗 Proteínas' },
-  // 🍗 PROTEÍNAS — Vegetales y suplementos
   { nombre: 'Lentejas (cocidas)', calorias: 116, proteinas: 9, carbohidratos: 20, grasas: 0, categoria: '🍗 Proteínas' },
   { nombre: 'Garbanzos (cocidos)', calorias: 164, proteinas: 9, carbohidratos: 27, grasas: 3, categoria: '🍗 Proteínas' },
   { nombre: 'Porotos (cocidos)', calorias: 127, proteinas: 9, carbohidratos: 23, grasas: 0, categoria: '🍗 Proteínas' },
@@ -69,8 +64,6 @@ const ALIMENTOS_RAPIDOS = [
   { nombre: 'Tofu', calorias: 144, proteinas: 15, carbohidratos: 3, grasas: 9, categoria: '🍗 Proteínas' },
   { nombre: 'Soja texturizada (seca)', calorias: 340, proteinas: 50, carbohidratos: 30, grasas: 1, categoria: '🍗 Proteínas' },
   { nombre: 'Proteína whey (polvo)', calorias: 380, proteinas: 78, carbohidratos: 8, grasas: 5, categoria: '🍗 Proteínas' },
-
-  // 🌾 CARBOHIDRATOS — Granos y tubérculos
   { nombre: 'Arroz blanco (cocido)', calorias: 130, proteinas: 3, carbohidratos: 28, grasas: 0, categoria: '🌾 Carbohidratos' },
   { nombre: 'Arroz integral (cocido)', calorias: 111, proteinas: 3, carbohidratos: 23, grasas: 1, categoria: '🌾 Carbohidratos' },
   { nombre: 'Avena', calorias: 389, proteinas: 17, carbohidratos: 66, grasas: 7, categoria: '🌾 Carbohidratos' },
@@ -83,7 +76,6 @@ const ALIMENTOS_RAPIDOS = [
   { nombre: 'Fideos integrales (cocidos)', calorias: 124, proteinas: 5, carbohidratos: 25, grasas: 1, categoria: '🌾 Carbohidratos' },
   { nombre: 'Fideos comunes (cocidos)', calorias: 131, proteinas: 5, carbohidratos: 25, grasas: 1, categoria: '🌾 Carbohidratos' },
   { nombre: 'Ñoquis', calorias: 130, proteinas: 4, carbohidratos: 27, grasas: 1, categoria: '🌾 Carbohidratos' },
-  // 🌾 CARBOHIDRATOS — Panificados y cereales
   { nombre: 'Pan integral', calorias: 247, proteinas: 13, carbohidratos: 41, grasas: 4, categoria: '🌾 Carbohidratos' },
   { nombre: 'Pan blanco', calorias: 265, proteinas: 9, carbohidratos: 49, grasas: 3, categoria: '🌾 Carbohidratos' },
   { nombre: 'Pan lactal', calorias: 270, proteinas: 9, carbohidratos: 50, grasas: 4, categoria: '🌾 Carbohidratos' },
@@ -93,7 +85,6 @@ const ALIMENTOS_RAPIDOS = [
   { nombre: 'Cereales sin azúcar (copos)', calorias: 379, proteinas: 8, carbohidratos: 84, grasas: 2, categoria: '🌾 Carbohidratos' },
   { nombre: 'Corn flakes', calorias: 357, proteinas: 7, carbohidratos: 84, grasas: 1, categoria: '🌾 Carbohidratos' },
   { nombre: 'Granola', calorias: 471, proteinas: 10, carbohidratos: 64, grasas: 20, categoria: '🌾 Carbohidratos' },
-  // 🌾 CARBOHIDRATOS — Frutas
   { nombre: 'Banana', calorias: 89, proteinas: 1, carbohidratos: 23, grasas: 0, categoria: '🌾 Carbohidratos' },
   { nombre: 'Manzana', calorias: 52, proteinas: 0, carbohidratos: 14, grasas: 0, categoria: '🌾 Carbohidratos' },
   { nombre: 'Naranja', calorias: 47, proteinas: 1, carbohidratos: 12, grasas: 0, categoria: '🌾 Carbohidratos' },
@@ -111,8 +102,6 @@ const ALIMENTOS_RAPIDOS = [
   { nombre: 'Ciruela', calorias: 46, proteinas: 1, carbohidratos: 11, grasas: 0, categoria: '🌾 Carbohidratos' },
   { nombre: 'Pasas de uva', calorias: 299, proteinas: 3, carbohidratos: 79, grasas: 0, categoria: '🌾 Carbohidratos' },
   { nombre: 'Dátiles', calorias: 277, proteinas: 2, carbohidratos: 75, grasas: 0, categoria: '🌾 Carbohidratos' },
-
-  // 🥑 GRASAS
   { nombre: 'Palta', calorias: 160, proteinas: 2, carbohidratos: 9, grasas: 15, categoria: '🥑 Grasas' },
   { nombre: 'Aceite de oliva', calorias: 884, proteinas: 0, carbohidratos: 0, grasas: 100, categoria: '🥑 Grasas' },
   { nombre: 'Aceite de girasol', calorias: 884, proteinas: 0, carbohidratos: 0, grasas: 100, categoria: '🥑 Grasas' },
@@ -129,8 +118,6 @@ const ALIMENTOS_RAPIDOS = [
   { nombre: 'Aceitunas', calorias: 115, proteinas: 1, carbohidratos: 6, grasas: 11, categoria: '🥑 Grasas' },
   { nombre: 'Manteca/mantequilla', calorias: 717, proteinas: 1, carbohidratos: 0, grasas: 81, categoria: '🥑 Grasas' },
   { nombre: 'Chocolate amargo 70%', calorias: 598, proteinas: 8, carbohidratos: 46, grasas: 43, categoria: '🥑 Grasas' },
-
-  // 🥦 VEGETALES
   { nombre: 'Brócoli', calorias: 34, proteinas: 3, carbohidratos: 7, grasas: 0, categoria: '🥦 Vegetales' },
   { nombre: 'Espinaca', calorias: 23, proteinas: 3, carbohidratos: 4, grasas: 0, categoria: '🥦 Vegetales' },
   { nombre: 'Acelga', calorias: 19, proteinas: 2, carbohidratos: 4, grasas: 0, categoria: '🥦 Vegetales' },
@@ -202,18 +189,15 @@ export default function MiPlanAlimentacion({ perfil }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  // Generador IA
   const [alimentosSeleccionados, setAlimentosSeleccionados] = useState([])
   const [categoriaFiltro, setCategoriaFiltro] = useState('Todos')
   const [caloriasObjetivo, setCaloriasObjetivo] = useState('')
   const [objetivo, setObjetivo] = useState('bajar de grasa')
   const [generando, setGenerando] = useState(false)
-  const [planesGenerados, setPlanesGenerados] = useState([])
-  const [planGeneradoDetalle, setPlanGeneradoDetalle] = useState(null)
+  const [planGenerado, setPlanGenerado] = useState(null)
   const [guardandoPlan, setGuardandoPlan] = useState(false)
   const [usosIaMes, setUsosIaMes] = useState(0)
 
-  // Planes manuales
   const [modalDetalle, setModalDetalle] = useState(null)
   const [comidasPlan, setComidasPlan] = useState([])
   const [modalAgregarComida, setModalAgregarComida] = useState(false)
@@ -254,22 +238,22 @@ export default function MiPlanAlimentacion({ perfil }) {
     )
   }
 
-  async function generarPlanesIA() {
+  async function generarPlanIA() {
     if (alimentosSeleccionados.length < 5) {
-      alert('Seleccioná al menos 5 alimentos para generar los planes')
+      alert('Seleccioná al menos 5 alimentos para generar el plan')
       return
     }
     if (usosIaMes >= LIMITE_IA_MES) {
-      alert(`Llegaste al límite de ${LIMITE_IA_MES} generaciones de planes este mes. Se renueva el 1° del mes que viene.`)
+      alert(`Llegaste al límite de ${LIMITE_IA_MES} generaciones este mes. Se renueva el 1° del mes que viene.`)
       return
     }
     setGenerando(true)
-    setPlanesGenerados([])
+    setPlanGenerado(null)
 
     const calorias = caloriasObjetivo || 2000
     const listaAlimentos = alimentosSeleccionados.map(a => a.nombre).join(', ')
 
-    const prompt = `Eres nutricionista deportivo. Crea 7 planes de comida diaria DIFERENTES usando SOLO estos alimentos: ${listaAlimentos}. Objetivo: ${objetivo}. Meta calorica: ${calorias} kcal/dia. Responde SOLO JSON valido sin texto ni markdown: {"planes":[{"nombre":"Plan 1","comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6}]},{"momento":"Almuerzo","items":[{"nombre":"Pechuga de pollo","cantidad_gramos":180,"calorias":297,"proteinas":56,"carbohidratos":0,"grasas":7}]},{"momento":"Merienda","items":[{"nombre":"Yogur griego natural","cantidad_gramos":200,"calorias":118,"proteinas":20,"carbohidratos":8,"grasas":0}]},{"momento":"Cena","items":[{"nombre":"Merluza","cantidad_gramos":200,"calorias":164,"proteinas":36,"carbohidratos":0,"grasas":2}]}]}]}`
+    const prompt = `Eres nutricionista deportivo. Crea 1 plan de comida diaria usando SOLO estos alimentos: ${listaAlimentos}. Objetivo: ${objetivo}. Meta calorica: ${calorias} kcal/dia. Responde SOLO JSON valido sin texto ni markdown: {"nombre":"Plan Dia 1","comidas":[{"momento":"Desayuno","items":[{"nombre":"Avena","cantidad_gramos":80,"calorias":311,"proteinas":14,"carbohidratos":53,"grasas":6}]},{"momento":"Almuerzo","items":[{"nombre":"Pechuga de pollo","cantidad_gramos":180,"calorias":297,"proteinas":56,"carbohidratos":0,"grasas":7}]},{"momento":"Merienda","items":[{"nombre":"Yogur griego natural","cantidad_gramos":200,"calorias":118,"proteinas":20,"carbohidratos":8,"grasas":0}]},{"momento":"Cena","items":[{"nombre":"Merluza","cantidad_gramos":200,"calorias":164,"proteinas":36,"carbohidratos":0,"grasas":2}]}]}`
 
     try {
       const response = await fetch('https://zdmoxnapheaizbinxvqr.supabase.co/functions/v1/quick-responder', {
@@ -284,13 +268,13 @@ export default function MiPlanAlimentacion({ perfil }) {
       const texto = data.content?.[0]?.text || ''
       const clean = texto.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(clean)
-      setPlanesGenerados(parsed.planes || [])
+      setPlanGenerado(parsed)
       try {
         await supabase.from('uso_ia').insert({ alumno_id: perfil.id, tipo: 'alimentacion' })
         setUsosIaMes(prev => prev + 1)
       } catch (e) {}
     } catch (e) {
-      alert('Error al generar los planes. Intentá de nuevo.')
+      alert('Error al generar el plan. Intentá de nuevo.')
     }
     setGenerando(false)
   }
@@ -301,7 +285,7 @@ export default function MiPlanAlimentacion({ perfil }) {
       alumno_id: perfil.id,
       nombre: plan.nombre,
       descripcion: `Generado por IA · Objetivo: ${objetivo}`,
-      calorias_objetivo: plan.calorias_total
+      calorias_objetivo: null
     }).select().single()
 
     if (nuevoPlan) {
@@ -324,7 +308,7 @@ export default function MiPlanAlimentacion({ perfil }) {
       }
       setPlanes(prev => [nuevoPlan, ...prev])
       setTab('planes')
-      setPlanGeneradoDetalle(null)
+      setPlanGenerado(null)
       alert(`✅ "${plan.nombre}" guardado en tus planes!`)
     }
     setGuardandoPlan(false)
@@ -421,12 +405,12 @@ export default function MiPlanAlimentacion({ perfil }) {
         {tab === 'planes' && (
           <>
             <button style={{ ...s.btnFull, marginBottom: 16 }} onClick={() => setModalNuevoPlan(true)}>+ Nuevo Plan Manual</button>
-            <button style={{ ...s.btnGreen, marginBottom: 16 }} onClick={() => setTab('generar')}>🤖 Generar 7 planes con IA</button>
+            <button style={{ ...s.btnGreen, marginBottom: 16 }} onClick={() => setTab('generar')}>🤖 Generar plan con IA</button>
 
             {loading ? <div style={s.empty}>Cargando...</div> : planes.length === 0 ? (
               <div style={s.empty}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>🥗</div>
-                <div>Todavía no tenés planes.<br />Creá uno manual o generá 7 con IA.</div>
+                <div>Todavía no tenés planes.<br />Creá uno manual o generá uno con IA.</div>
               </div>
             ) : planes.map(p => (
               <div key={p.id} style={s.card} onClick={() => { setModalDetalle(p); cargarComidasPlan(p.id) }}>
@@ -446,15 +430,15 @@ export default function MiPlanAlimentacion({ perfil }) {
         {/* TAB GENERAR CON IA */}
         {tab === 'generar' && (
           <>
-            {planesGenerados.length === 0 ? (
+            {!planGenerado ? (
               <>
                 <div style={{ background: 'rgba(74,222,128,0.05)', border: '1px solid #4ade8020', borderRadius: 12, padding: 16, marginBottom: 20 }}>
                   <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: '#4ade80', marginBottom: 6 }}>¿CÓMO FUNCIONA?</div>
                   <div style={{ fontSize: 13, color: '#888', lineHeight: 1.6 }}>
                     1. Seleccioná los alimentos que te gustan<br />
                     2. Poné tus calorías objetivo<br />
-                    3. La IA te arma 7 planes de comida diferentes<br />
-                    4. Guardá los que más te gusten
+                    3. La IA te arma un plan de comida<br />
+                    4. Guardalo si te gusta o generá otro
                   </div>
                 </div>
 
@@ -468,7 +452,7 @@ export default function MiPlanAlimentacion({ perfil }) {
                 <div style={{ background: 'rgba(245,230,66,0.08)', border: '1px solid #f5e64230', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
                   <div style={{ fontSize: 13, color: '#f5e642', fontWeight: 700, marginBottom: 4 }}>⚠️ Elegí bien tus alimentos antes de generar</div>
                   <div style={{ fontSize: 12, color: '#999', lineHeight: 1.5 }}>
-                    Tenés {LIMITE_IA_MES} generaciones de planes por mes. Te quedan <strong style={{ color: '#4ade80' }}>{Math.max(0, LIMITE_IA_MES - usosIaMes)}</strong> este mes.
+                    Tenés {LIMITE_IA_MES} generaciones por mes. Te quedan <strong style={{ color: '#4ade80' }}>{Math.max(0, LIMITE_IA_MES - usosIaMes)}</strong> este mes.
                   </div>
                 </div>
 
@@ -513,104 +497,69 @@ export default function MiPlanAlimentacion({ perfil }) {
 
                 <button
                   style={{ ...s.btnFull, background: (generando || usosIaMes >= LIMITE_IA_MES) ? '#333' : '#4ade80', color: (generando || usosIaMes >= LIMITE_IA_MES) ? '#888' : '#000', fontSize: 16, padding: '16px' }}
-                  onClick={generarPlanesIA}
+                  onClick={generarPlanIA}
                   disabled={generando || alimentosSeleccionados.length < 5 || usosIaMes >= LIMITE_IA_MES}
                 >
-                  {generando ? '🤖 Generando tus 7 planes...' : usosIaMes >= LIMITE_IA_MES ? `Límite mensual alcanzado (${LIMITE_IA_MES})` : `🤖 Generar 7 planes (${alimentosSeleccionados.length} alimentos)`}
+                  {generando ? '🤖 Generando tu plan...' : usosIaMes >= LIMITE_IA_MES ? `Límite mensual alcanzado (${LIMITE_IA_MES})` : `🤖 Generar plan (${alimentosSeleccionados.length} alimentos)`}
                 </button>
                 {alimentosSeleccionados.length < 5 && <div style={{ textAlign: 'center', fontSize: 12, color: '#555', marginTop: 8 }}>Seleccioná al menos 5 alimentos</div>}
               </>
             ) : (
               <>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: '#4ade80', marginBottom: 4 }}>🎉 7 PLANES GENERADOS!</div>
-                <div style={{ fontSize: 13, color: '#555', marginBottom: 20 }}>Tocá cada plan para verlo en detalle y guardarlo.</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: '#4ade80', marginBottom: 4 }}>✅ PLAN GENERADO!</div>
+                <div style={{ fontSize: 13, color: '#555', marginBottom: 16 }}>Revisá el plan y guardalo si te gusta.</div>
 
-                {planesGenerados.map((plan, i) => {
-                  const todosItems = plan.comidas?.flatMap(c => c.items) || []
-                  const tCal = Math.round(todosItems.reduce((s, it) => s + (it.calorias || 0), 0))
-                  const tP = Math.round(todosItems.reduce((s, it) => s + (it.proteinas || 0), 0))
-                  const tC = Math.round(todosItems.reduce((s, it) => s + (it.carbohidratos || 0), 0))
-                  const tG = Math.round(todosItems.reduce((s, it) => s + (it.grasas || 0), 0))
-                  return (
-                    <div key={i} style={s.card} onClick={() => setPlanGeneradoDetalle(plan)}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: '#4ade80' }}>{plan.nombre}</div>
-                          <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>{plan.comidas?.length} comidas · {tCal} kcal</div>
-                          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                            {[{ l: 'P', v: tP, c: '#60a5fa' }, { l: 'C', v: tC, c: '#f97316' }, { l: 'G', v: tG, c: '#facc15' }].map(m => (
-                              <span key={m.l} style={{ fontSize: 12, color: m.c, fontWeight: 700 }}>{m.l}: {m.v}g</span>
-                            ))}
-                          </div>
-                        </div>
-                        <div style={{ color: '#4ade80', fontSize: 20 }}>›</div>
+                {/* Macros totales */}
+                <div style={{ background: '#0d0d0d', border: '1px solid #222', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
+                    {(() => {
+                      const its = planGenerado.comidas?.flatMap(c => c.items) || []
+                      const tCal = Math.round(its.reduce((s, it) => s + (it.calorias || 0), 0))
+                      const tP = Math.round(its.reduce((s, it) => s + (it.proteinas || 0), 0))
+                      const tC = Math.round(its.reduce((s, it) => s + (it.carbohidratos || 0), 0))
+                      const tG = Math.round(its.reduce((s, it) => s + (it.grasas || 0), 0))
+                      return [
+                        { l: 'KCAL', v: tCal, c: '#f5e642' },
+                        { l: 'PROT', v: tP + 'g', c: '#60a5fa' },
+                        { l: 'CARBS', v: tC + 'g', c: '#f97316' },
+                        { l: 'GRASAS', v: tG + 'g', c: '#facc15' }
+                      ]
+                    })().map(m => (
+                      <div key={m.l}>
+                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: m.c }}>{m.v}</div>
+                        <div style={{ fontSize: 10, color: '#555', letterSpacing: 1 }}>{m.l}</div>
                       </div>
-                    </div>
-                  )
-                })}
+                    ))}
+                  </div>
+                </div>
 
-                <button style={{ ...s.btnGhost, width: '100%', marginTop: 8 }} onClick={() => setPlanesGenerados([])}>← Generar de nuevo</button>
+                {/* Comidas del plan */}
+                {planGenerado.comidas?.map((comida, i) => (
+                  <div key={i} style={{ background: '#0d0d0d', border: '1px solid #222', borderRadius: 12, marginBottom: 12, overflow: 'hidden' }}>
+                    <div style={{ padding: '10px 16px', borderBottom: '1px solid #1a1a1a', background: '#111' }}>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 15, letterSpacing: 1, color: '#4ade80' }}>{comida.momento}</div>
+                    </div>
+                    {comida.items?.map((item, j) => (
+                      <div key={j} style={{ padding: '10px 16px', borderBottom: '1px solid #111' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{item.nombre}</div>
+                          <div style={{ fontSize: 12, color: '#f5e642' }}>{item.cantidad_gramos}g</div>
+                        </div>
+                        <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{item.calorias} kcal · P:{item.proteinas}g C:{item.carbohidratos}g G:{item.grasas}g</div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+
+                <button style={{ ...s.btnFull, background: '#4ade80', color: '#000', marginBottom: 10 }} onClick={() => guardarPlanGenerado(planGenerado)} disabled={guardandoPlan}>
+                  {guardandoPlan ? 'Guardando...' : '💾 Guardar este plan'}
+                </button>
+                <button style={{ ...s.btnGhost, width: '100%' }} onClick={() => setPlanGenerado(null)}>← Generar otro</button>
               </>
             )}
           </>
         )}
       </main>
-
-      {/* MODAL DETALLE PLAN GENERADO */}
-      {planGeneradoDetalle && (
-        <div style={s.modal} onClick={() => setPlanGeneradoDetalle(null)}>
-          <div style={{ ...s.modalContent, maxHeight: '95vh' }} onClick={e => e.stopPropagation()}>
-            <div style={s.modalHeader}>
-              <div style={s.modalTitle}>{planGeneradoDetalle.nombre}</div>
-              <button style={s.closeBtn} onClick={() => setPlanGeneradoDetalle(null)}>✕</button>
-            </div>
-
-            <div style={{ background: '#0d0d0d', border: '1px solid #222', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
-                {(() => {
-                  const its = planGeneradoDetalle.comidas?.flatMap(c => c.items) || []
-                  const tCal2 = Math.round(its.reduce((s, it) => s + (it.calorias || 0), 0))
-                  const tP2 = Math.round(its.reduce((s, it) => s + (it.proteinas || 0), 0))
-                  const tC2 = Math.round(its.reduce((s, it) => s + (it.carbohidratos || 0), 0))
-                  const tG2 = Math.round(its.reduce((s, it) => s + (it.grasas || 0), 0))
-                  return [
-                    { l: 'KCAL', v: tCal2, c: '#f5e642' },
-                    { l: 'PROT', v: tP2 + 'g', c: '#60a5fa' },
-                    { l: 'CARBS', v: tC2 + 'g', c: '#f97316' },
-                    { l: 'GRASAS', v: tG2 + 'g', c: '#facc15' }
-                  ]
-                })().map(m => (
-                  <div key={m.l}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: m.c }}>{m.v}</div>
-                    <div style={{ fontSize: 10, color: '#555', letterSpacing: 1 }}>{m.l}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {planGeneradoDetalle.comidas?.map((comida, i) => (
-              <div key={i} style={{ background: '#0d0d0d', border: '1px solid #222', borderRadius: 12, marginBottom: 12, overflow: 'hidden' }}>
-                <div style={{ padding: '10px 16px', borderBottom: '1px solid #1a1a1a', background: '#111' }}>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 15, letterSpacing: 1, color: '#4ade80' }}>{comida.momento}</div>
-                </div>
-                {comida.items?.map((item, j) => (
-                  <div key={j} style={{ padding: '10px 16px', borderBottom: '1px solid #111' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{item.nombre}</div>
-                      <div style={{ fontSize: 12, color: '#f5e642' }}>{item.cantidad_gramos}g</div>
-                    </div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{item.calorias} kcal · P:{item.proteinas}g C:{item.carbohidratos}g G:{item.grasas}g</div>
-                  </div>
-                ))}
-              </div>
-            ))}
-
-            <button style={{ ...s.btnFull, background: '#4ade80', color: '#000', marginTop: 8 }} onClick={() => guardarPlanGenerado(planGeneradoDetalle)} disabled={guardandoPlan}>
-              {guardandoPlan ? 'Guardando...' : '💾 Guardar este plan'}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* MODAL NUEVO PLAN MANUAL */}
       {modalNuevoPlan && (
