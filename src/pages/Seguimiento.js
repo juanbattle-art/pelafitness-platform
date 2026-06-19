@@ -108,6 +108,8 @@ const s = {
   flechasRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 },
   flecha: { background: '#1a1a1a', border: '1px solid #f5e64240', borderRadius: 8, color: '#f5e642', fontSize: 18, width: 38, height: 38, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   flechaInput: { width: 70, background: '#0a0a0a', border: '1px solid #f5e642', borderRadius: 8, padding: '8px', color: '#f5e642', fontSize: 18, textAlign: 'center', outline: 'none', fontFamily: "'Bebas Neue', sans-serif", fontWeight: 700 },
+  entrenTabs: { display: 'flex', gap: 4, background: '#111', border: '1px solid #222', borderRadius: 10, padding: 4, marginBottom: 16 },
+  entrenTab: (a) => ({ flex: 1, padding: '8px', background: a ? '#f5e642' : 'none', color: a ? '#000' : '#666', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center' }),
 }
 
 const MOMENTOS = [
@@ -117,6 +119,10 @@ const MOMENTOS = [
   { id: 'Cena', icono: '🌙', nombre: 'Cena' },
   { id: 'Snack', icono: '🍎', nombre: 'Snacks' },
 ]
+
+const DIAS_SEMANA = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+const DIAS_LABEL = { lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles', jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo' }
+const DIAS_SHORT = { lunes: 'Lun', martes: 'Mar', miercoles: 'Mié', jueves: 'Jue', viernes: 'Vie', sabado: 'Sáb', domingo: 'Dom' }
 
 function fechaHoy() {
   const d = new Date()
@@ -144,6 +150,22 @@ function formatearLargo(fechaStr) {
   const [año, mes, dia] = fechaStr.split('-').map(Number)
   const d = new Date(año, mes - 1, dia)
   return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function diaSemanaDeDate(fechaStr) {
+  const [año, mes, dia] = fechaStr.split('-').map(Number)
+  const d = new Date(año, mes - 1, dia)
+  const map = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
+  return map[d.getDay()]
+}
+
+function inicioSemana(fechaStr) {
+  const [año, mes, dia] = fechaStr.split('-').map(Number)
+  const d = new Date(año, mes - 1, dia)
+  const dow = d.getDay()
+  const diff = dow === 0 ? -6 : 1 - dow
+  d.setDate(d.getDate() + diff)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function CalorieCircle({ consumidas, meta }) {
@@ -226,17 +248,24 @@ export default function Seguimiento({ perfil }) {
   const [customForm, setCustomForm] = useState({ codigo_barras: '', nombre: '', marca: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', imagen_url: '', unidades: [] })
 
   // ============ ESTADO ENTRENAMIENTO ============
+  const [entrenTab, setEntrenTab] = useState('hoy')
   const [rutinas, setRutinas] = useState([])
   const [loadingRutinas, setLoadingRutinas] = useState(true)
-  const [rutinaActiva, setRutinaActiva] = useState(null) // rutina seleccionada para entrenar
+  const [rutinaActiva, setRutinaActiva] = useState(null)
   const [diasRutinaActiva, setDiasRutinaActiva] = useState([])
+  const [programacion, setProgramacion] = useState({})
+  const [showProgramar, setShowProgramar] = useState(false)
+  const [programandoRutina, setProgramandoRutina] = useState(null)
+  const [programacionForm, setProgramacionForm] = useState({})
   const [diaEntrenoSeleccionado, setDiaEntrenoSeleccionado] = useState(null)
   const [ejerciciosDiaEntreno, setEjerciciosDiaEntreno] = useState([])
   const [registrosEntreno, setRegistrosEntreno] = useState({})
   const [ultimoRegistroEntreno, setUltimoRegistroEntreno] = useState({})
   const [ejActual, setEjActual] = useState(null)
   const [seriesEditando, setSeriesEditando] = useState([])
-  const [showSeleccionarRutina, setShowSeleccionarRutina] = useState(false)
+  const [semanaHistorial, setSemanaHistorial] = useState(inicioSemana(fechaHoy()))
+  const [historialSemana, setHistorialSemana] = useState([])
+  const [loadingHistorial, setLoadingHistorial] = useState(false)
 
   const META_AGUA = 8
   const timeoutRef = useRef(null)
@@ -259,6 +288,7 @@ export default function Seguimiento({ perfil }) {
   useEffect(() => { cargarTodo() }, [fecha, alumnoIdActual])
   useEffect(() => { cargarHistorial() }, [tab, alumnoIdActual])
   useEffect(() => { cargarRutinas() }, [alumnoIdActual])
+  useEffect(() => { if (tab === 'entreno' && entrenTab === 'historial' && rutinaActiva) cargarHistorialEntreno() }, [tab, entrenTab, semanaHistorial, rutinaActiva])
 
   // ============ CARGA GENERAL ============
   async function cargarTodo() {
@@ -302,17 +332,73 @@ export default function Seguimiento({ perfil }) {
 
   async function seleccionarRutina(rutina) {
     setRutinaActiva(rutina)
-    setShowSeleccionarRutina(false)
     const { data: dias } = await supabase
       .from('rutina_dias')
       .select('*, rutina_ejercicios(*, ejercicios_catalogo(*))')
       .eq('rutina_id', rutina.id)
       .order('orden')
     setDiasRutinaActiva(dias || [])
-    if (dias && dias.length > 0) {
-      setDiaEntrenoSeleccionado(dias[0])
-      cargarRegistrosDia(dias[0])
+    const { data: prog } = await supabase
+      .from('rutina_programacion')
+      .select('*')
+      .eq('alumno_id', alumnoIdActual)
+      .eq('rutina_id', rutina.id)
+    const map = {}
+    ;(prog || []).forEach(p => { map[p.rutina_dia_id] = p.dia_semana })
+    setProgramacion(map)
+    if (prog && prog.length > 0) {
+      const hoyDia = diaSemanaDeDate(fechaHoy())
+      const diaHoy = (prog || []).find(p => p.dia_semana === hoyDia)
+      if (diaHoy && dias) {
+        const diaRutina = dias.find(d => d.id === diaHoy.rutina_dia_id)
+        const diaAUsar = diaRutina || dias[0]
+        if (diaAUsar) { setDiaEntrenoSeleccionado(diaAUsar); cargarRegistrosDia(diaAUsar) }
+      } else if (dias && dias.length > 0) {
+        setDiaEntrenoSeleccionado(dias[0]); cargarRegistrosDia(dias[0])
+      }
+    } else {
+      setProgramandoRutina(rutina); setProgramacionForm({}); setShowProgramar(true)
+      if (dias && dias.length > 0) { setDiaEntrenoSeleccionado(dias[0]); cargarRegistrosDia(dias[0]) }
     }
+  }
+
+  async function guardarProgramacion() {
+    if (!programandoRutina) return
+    await supabase.from('rutina_programacion').delete().eq('alumno_id', alumnoIdActual).eq('rutina_id', programandoRutina.id)
+    const inserts = Object.entries(programacionForm).filter(([, d]) => d).map(([rutina_dia_id, dia_semana]) => ({ alumno_id: alumnoIdActual, rutina_id: programandoRutina.id, rutina_dia_id, dia_semana }))
+    if (inserts.length > 0) await supabase.from('rutina_programacion').insert(inserts)
+    setProgramacion(programacionForm); setShowProgramar(false)
+    setMsg('✅ Programación guardada'); setTimeout(() => setMsg(''), 2000)
+  }
+
+  async function cargarHistorialEntreno() {
+    if (!rutinaActiva) return
+    setLoadingHistorial(true)
+    const finSemana = sumarDias(semanaHistorial, 6)
+    const { data: dias } = await supabase.from('rutina_dias').select('*, rutina_ejercicios(*, ejercicios_catalogo(*))').eq('rutina_id', rutinaActiva.id).order('orden')
+    if (!dias) { setLoadingHistorial(false); return }
+    const todosIds = dias.flatMap(d => (d.rutina_ejercicios || []).map(e => e.id))
+    if (todosIds.length === 0) { setHistorialSemana([]); setLoadingHistorial(false); return }
+    const { data: regs } = await supabase.from('registros_series_rutina').select('*').eq('alumno_id', alumnoIdActual).gte('fecha', semanaHistorial).lte('fecha', finSemana).in('rutina_ejercicio_id', todosIds).order('fecha').order('numero_serie')
+    const porFecha = {}
+    ;(regs || []).forEach(r => {
+      if (!porFecha[r.fecha]) porFecha[r.fecha] = {}
+      if (!porFecha[r.fecha][r.rutina_ejercicio_id]) porFecha[r.fecha][r.rutina_ejercicio_id] = []
+      porFecha[r.fecha][r.rutina_ejercicio_id].push(r)
+    })
+    const resultado = []
+    for (let i = 0; i < 7; i++) {
+      const f = sumarDias(semanaHistorial, i)
+      const regsDelDia = porFecha[f] || {}
+      const ejerciciosConReg = []
+      dias.forEach(dia => {
+        ;(dia.rutina_ejercicios || []).forEach(ej => {
+          if (regsDelDia[ej.id]?.length > 0) ejerciciosConReg.push({ ej, series: regsDelDia[ej.id], diaNombre: dia.nombre })
+        })
+      })
+      if (ejerciciosConReg.length > 0) resultado.push({ fecha: f, ejercicios: ejerciciosConReg })
+    }
+    setHistorialSemana(resultado); setLoadingHistorial(false)
   }
 
   async function cargarRegistrosDia(dia) {
@@ -773,117 +859,181 @@ export default function Seguimiento({ perfil }) {
         )}
 
         {/* =================== ENTRENO =================== */}
+        {/* =================== ENTRENO =================== */}
         {tab === 'entreno' && (
           <div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, letterSpacing: 1, marginBottom: 4 }}>HOY ENTRENO</div>
-            <div style={{ fontSize: 13, color: '#555', marginBottom: 20 }}>{new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, letterSpacing: 1, marginBottom: 4 }}>ENTRENAMIENTO</div>
+            <div style={{ fontSize: 13, color: '#555', marginBottom: 16 }}>{new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
 
-            {/* Sin rutina seleccionada */}
-            {!rutinaActiva && (
+            <div style={s.entrenTabs}>
+              <button style={s.entrenTab(entrenTab === 'hoy')} onClick={() => setEntrenTab('hoy')}>💪 Hoy</button>
+              <button style={s.entrenTab(entrenTab === 'historial')} onClick={() => setEntrenTab('historial')}>📅 Historial</button>
+            </div>
+
+            {entrenTab === 'hoy' && (
               <>
-                {loadingRutinas ? (
-                  <div style={s.empty}>Cargando rutinas...</div>
-                ) : rutinas.length === 0 ? (
-                  <div style={s.empty}>
-                    <div style={{ fontSize: 48, marginBottom: 12 }}>🏋️</div>
-                    <div style={{ marginBottom: 16 }}>Todavía no tenés rutinas creadas.</div>
-                    <button style={{ background: '#f5e642', color: '#000', border: 'none', borderRadius: 8, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => navigate('/mi-entrenamiento')}>
-                      Ir a crear una rutina
-                    </button>
-                  </div>
+                {!rutinaActiva ? (
+                  loadingRutinas ? <div style={s.empty}>Cargando...</div> : rutinas.length === 0 ? (
+                    <div style={s.empty}>
+                      <div style={{ fontSize: 48, marginBottom: 12 }}>🏋️</div>
+                      <div style={{ marginBottom: 16 }}>No tenés rutinas creadas todavía.</div>
+                      <button style={{ background: '#f5e642', color: '#000', border: 'none', borderRadius: 8, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => navigate('/mi-entrenamiento')}>Ir a crear una rutina</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>Elegí la rutina de hoy:</div>
+                      {rutinas.map(r => (
+                        <div key={r.id} style={s.rutinaCard} onClick={() => seleccionarRutina(r)}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#f5e642' }}>{r.nombre}</div>
+                              {r.descripcion && <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>{r.descripcion}</div>}
+                            </div>
+                            <div style={{ color: '#f5e642', fontSize: 20 }}>›</div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )
                 ) : (
                   <>
-                    <div style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>Elegí la rutina que vas a hacer hoy:</div>
-                    {rutinas.map(r => (
-                      <div key={r.id} style={s.rutinaCard} onClick={() => seleccionarRutina(r)}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 1, color: '#f5e642' }}>{r.nombre}</div>
-                            {r.descripcion && <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>{r.descripcion}</div>}
-                          </div>
-                          <div style={{ color: '#f5e642', fontSize: 20 }}>›</div>
-                        </div>
+                    <div style={{ background: 'rgba(245,230,66,0.08)', border: '1px solid #f5e64230', borderRadius: 12, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: '#f5e642' }}>{rutinaActiva.nombre}</div>
+                        <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{diasRutinaActiva.length} días</div>
                       </div>
-                    ))}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button style={{ ...s.btnSm, fontSize: 11 }} onClick={() => { setProgramandoRutina(rutinaActiva); setProgramacionForm({ ...programacion }); setShowProgramar(true) }}>📅 Programar</button>
+                        <button style={{ background: 'none', border: '1px solid #333', color: '#666', borderRadius: 6, padding: '6px 10px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => { setRutinaActiva(null); setDiasRutinaActiva([]); setDiaEntrenoSeleccionado(null); setEjerciciosDiaEntreno([]) }}>Cambiar</button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, marginBottom: 16 }}>
+                      {diasRutinaActiva.map(dia => {
+                        const diaProg = programacion[dia.id]
+                        return (
+                          <button key={dia.id} style={{ background: diaEntrenoSeleccionado?.id === dia.id ? '#f5e642' : '#1a1a1a', color: diaEntrenoSeleccionado?.id === dia.id ? '#000' : '#888', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', textAlign: 'center' }}
+                            onClick={() => { setDiaEntrenoSeleccionado(dia); cargarRegistrosDia(dia) }}>
+                            <div>{dia.nombre}</div>
+                            {diaProg && <div style={{ fontSize: 9, opacity: 0.7, marginTop: 2 }}>{DIAS_SHORT[diaProg]}</div>}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {diaEntrenoSeleccionado && (
+                      <>
+                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#f5e642', marginBottom: 4 }}>{diaEntrenoSeleccionado.nombre}</div>
+                        <div style={{ fontSize: 13, color: '#555', marginBottom: 16 }}>
+                          {programacion[diaEntrenoSeleccionado.id] ? '📅 ' + DIAS_LABEL[programacion[diaEntrenoSeleccionado.id]] : 'Sin día asignado'} · {ejerciciosDiaEntreno.length} ejercicios
+                        </div>
+
+                        {ejerciciosDiaEntreno.map(ej => {
+                          const yaHecho = (registrosEntreno[ej.id] || []).length > 0
+                          const regsHoy = registrosEntreno[ej.id] || []
+                          return (
+                            <div key={ej.id} style={{ ...s.ejercicioCard, border: `1px solid ${yaHecho ? '#4ade8040' : '#222'}` }}>
+                              <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, color: '#f0f0f0', marginBottom: 2 }}>{ej.ejercicios_catalogo?.nombre || ej.nombre_libre}</div>
+                                  <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase' }}>{ej.ejercicios_catalogo?.grupo_muscular}</div>
+                                </div>
+                                {yaHecho && <span style={{ fontSize: 20 }}>✅</span>}
+                              </div>
+                              <div style={{ padding: '10px 16px', background: '#0d0d0d', borderTop: '1px solid #1a1a1a', fontSize: 13, color: '#999' }}>
+                                📋 {ej.series} series x {ej.repeticiones} reps · RIR {ej.rir}{ej.notas ? ' · ' + ej.notas : ''}
+                              </div>
+                              {ultimoRegistroEntreno[ej.id] && !yaHecho && (
+                                <div style={{ padding: '8px 16px', borderTop: '1px solid #111', fontSize: 12, color: '#555' }}>
+                                  💡 Último: {ultimoRegistroEntreno[ej.id].reps_hechas} reps x {ultimoRegistroEntreno[ej.id].peso_kg}kg
+                                </div>
+                              )}
+                              {yaHecho && (
+                                <div style={{ padding: '8px 16px', borderTop: '1px solid #111' }}>
+                                  <div style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, marginBottom: 4 }}>HOY:</div>
+                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                    {regsHoy.map((r, i) => (
+                                      <span key={i} style={{ fontSize: 11, color: '#aaa', background: '#1a1a1a', padding: '3px 8px', borderRadius: 6 }}>
+                                        S{r.numero_serie}: {r.reps_hechas}x{r.peso_kg}kg (RIR {r.rir})
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              <button style={{ width: '100%', background: yaHecho ? 'rgba(74,222,128,0.15)' : '#f5e642', color: yaHecho ? '#4ade80' : '#000', border: 'none', padding: '14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textTransform: 'uppercase' }}
+                                onClick={() => abrirEjercicioEntreno(ej)}>
+                                {yaHecho ? '✓ Completado — Editar' : '✓ Registrar series'}
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </>
+                    )}
                   </>
                 )}
               </>
             )}
 
-            {/* Rutina seleccionada */}
-            {rutinaActiva && (
+            {entrenTab === 'historial' && (
               <>
-                {/* Header rutina activa */}
-                <div style={{ background: 'rgba(245,230,66,0.08)', border: '1px solid #f5e64230', borderRadius: 12, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: '#f5e642', letterSpacing: 1 }}>{rutinaActiva.nombre}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{diasRutinaActiva.length} días</div>
-                  </div>
-                  <button style={{ background: 'none', border: '1px solid #333', color: '#888', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => { setRutinaActiva(null); setDiasRutinaActiva([]); setDiaEntrenoSeleccionado(null); setEjerciciosDiaEntreno([]) }}>
-                    Cambiar
-                  </button>
-                </div>
-
-                {/* Selector de días */}
-                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, marginBottom: 16 }}>
-                  {diasRutinaActiva.map(dia => (
-                    <button key={dia.id} style={{ background: diaEntrenoSeleccionado?.id === dia.id ? '#f5e642' : '#1a1a1a', color: diaEntrenoSeleccionado?.id === dia.id ? '#000' : '#888', border: 'none', borderRadius: 8, padding: '10px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
-                      onClick={() => { setDiaEntrenoSeleccionado(dia); cargarRegistrosDia(dia) }}>
-                      {dia.nombre}
-                    </button>
-                  ))}
-                </div>
-
-                {diaEntrenoSeleccionado && (
+                {!rutinaActiva ? (
+                  <div style={s.empty}>Seleccioná una rutina en la pestaña Hoy primero.</div>
+                ) : (
                   <>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: '#f5e642', letterSpacing: 1, marginBottom: 4 }}>{diaEntrenoSeleccionado.nombre}</div>
-                    <div style={{ fontSize: 13, color: '#555', marginBottom: 16 }}>{ejerciciosDiaEntreno.length} ejercicios</div>
-
-                    {ejerciciosDiaEntreno.length === 0 ? (
-                      <div style={s.empty}>Este día no tiene ejercicios.</div>
-                    ) : ejerciciosDiaEntreno.map(ej => {
-                      const yaHecho = (registrosEntreno[ej.id] || []).length > 0
-                      const regsHoy = registrosEntreno[ej.id] || []
-                      return (
-                        <div key={ej.id} style={{ ...s.ejercicioCard, border: `1px solid ${yaHecho ? '#4ade8040' : '#222'}` }}>
-                          <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, color: '#f0f0f0', marginBottom: 4 }}>
-                                {ej.ejercicios_catalogo?.nombre || ej.nombre_libre}
-                              </div>
-                              <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>
-                                {ej.ejercicios_catalogo?.grupo_muscular}
-                              </div>
-                            </div>
-                            {yaHecho && <span style={{ fontSize: 20 }}>✅</span>}
-                          </div>
-
-                          <div style={{ padding: '10px 16px', background: '#0d0d0d', borderTop: '1px solid #1a1a1a', fontSize: 13, color: '#999' }}>
-                            📋 {ej.series} series × {ej.repeticiones} reps · RIR {ej.rir}
-                            {ej.notas ? ` · ${ej.notas}` : ''}
-                          </div>
-
-                          {/* Resumen de lo hecho hoy */}
-                          {yaHecho && (
-                            <div style={{ padding: '8px 16px', borderTop: '1px solid #111' }}>
-                              <div style={{ fontSize: 11, color: '#4ade80', marginBottom: 4, fontWeight: 700 }}>HOY:</div>
-                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                {regsHoy.map((r, i) => (
-                                  <span key={i} style={{ fontSize: 12, color: '#aaa', background: '#1a1a1a', padding: '3px 8px', borderRadius: 6 }}>
-                                    S{r.numero_serie}: {r.reps_hechas}reps × {r.peso_kg}kg (RIR {r.rir})
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          <button style={{ width: '100%', background: yaHecho ? 'rgba(74,222,128,0.15)' : '#f5e642', color: yaHecho ? '#4ade80' : '#000', border: 'none', padding: '14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textTransform: 'uppercase', letterSpacing: 1 }}
-                            onClick={() => abrirEjercicioEntreno(ej)}>
-                            {yaHecho ? '✓ Completado — Editar' : '✓ Registrar series'}
-                          </button>
+                    <div style={{ background: '#111', border: '1px solid #222', borderRadius: 12, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <button style={s.dayArrow} onClick={() => setSemanaHistorial(sumarDias(semanaHistorial, -7))}>◀</button>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 11, color: '#f5e642', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>SEMANA</div>
+                        <div style={{ fontSize: 13, color: '#ccc' }}>
+                          {new Date(semanaHistorial + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} — {new Date(sumarDias(semanaHistorial, 6) + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
-                      )
-                    })}
+                      </div>
+                      <button style={s.dayArrow} onClick={() => setSemanaHistorial(sumarDias(semanaHistorial, 7))}>▶</button>
+                    </div>
+
+                    {loadingHistorial ? <div style={s.loader}>Cargando historial...</div> : historialSemana.length === 0 ? (
+                      <div style={s.empty}><div style={{ fontSize: 48, marginBottom: 12 }}>📭</div><div>No entrenaste esta semana.</div></div>
+                    ) : historialSemana.map(dia => (
+                      <div key={dia.fecha} style={{ marginBottom: 20 }}>
+                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 15, color: '#f5e642', letterSpacing: 1, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {formatearLargo(dia.fecha).toUpperCase()}
+                          <span style={{ fontSize: 12, color: '#4ade80', fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>✅ {dia.ejercicios.length} ejercicios</span>
+                        </div>
+                        {dia.ejercicios.map((item, i) => {
+                          const volTotal = item.series.reduce((acc, r) => acc + r.reps_hechas * r.peso_kg, 0)
+                          const pesoMax = Math.max(...item.series.map(r => r.peso_kg))
+                          return (
+                            <div key={i} style={{ background: '#111', border: '1px solid #222', borderRadius: 12, marginBottom: 10, overflow: 'hidden' }}>
+                              <div style={{ padding: '12px 16px', background: '#161616', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 15, color: '#f0f0f0' }}>{item.ej.ejercicios_catalogo?.nombre || item.ej.nombre_libre}</div>
+                                  <div style={{ fontSize: 11, color: '#555' }}>{item.diaNombre}</div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: '#60a5fa' }}>{Math.round(volTotal)}</div>
+                                  <div style={{ fontSize: 10, color: '#555' }}>vol total</div>
+                                </div>
+                              </div>
+                              <div style={{ padding: '10px 16px' }}>
+                                <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
+                                  <div style={{ textAlign: 'center' }}><div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#f5e642' }}>{item.series.length}</div><div style={{ fontSize: 10, color: '#555' }}>SERIES</div></div>
+                                  <div style={{ textAlign: 'center' }}><div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#4ade80' }}>{pesoMax}kg</div><div style={{ fontSize: 10, color: '#555' }}>MÁX</div></div>
+                                  <div style={{ textAlign: 'center' }}><div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#f97316' }}>{Math.round(item.series.reduce((acc, r) => acc + r.reps_hechas, 0) / item.series.length)}</div><div style={{ fontSize: 10, color: '#555' }}>REPS PROM</div></div>
+                                  <div style={{ textAlign: 'center' }}><div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#a855f7' }}>{Math.round(item.series.reduce((acc, r) => acc + r.rir, 0) / item.series.length)}</div><div style={{ fontSize: 10, color: '#555' }}>RIR PROM</div></div>
+                                </div>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                  {item.series.map((r, j) => (
+                                    <span key={j} style={{ fontSize: 11, color: '#888', background: '#0d0d0d', border: '1px solid #222', padding: '3px 8px', borderRadius: 6 }}>
+                                      S{r.numero_serie}: {r.reps_hechas}x{r.peso_kg}kg RIR{r.rir}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ))}
                   </>
                 )}
               </>
@@ -891,7 +1041,7 @@ export default function Seguimiento({ perfil }) {
           </div>
         )}
 
-        {/* =================== PROGRESO =================== */}
+                {/* =================== PROGRESO =================== */}
         {tab === 'progreso' && (
           <div>
             <div style={s.card}>
@@ -1012,6 +1162,42 @@ export default function Seguimiento({ perfil }) {
         <button style={s.bottomTab(tab === 'progreso')} onClick={() => setTab('progreso')}><span style={s.bottomIcon}>📈</span>Progreso</button>
         <button style={s.bottomTab(tab === 'mas')} onClick={() => setTab('mas')}><span style={s.bottomIcon}>⋯</span>Más</button>
       </nav>
+
+      {/* MODAL PROGRAMAR DÍAS */}
+      {showProgramar && programandoRutina && (
+        <div style={s.porcionModal} onClick={() => setShowProgramar(false)}>
+          <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
+            <div style={s.porcionHeader}>
+              <div>
+                <div style={s.porcionNombre}>📅 Programar días</div>
+                <div style={s.porcionMarca}>{programandoRutina.nombre}</div>
+              </div>
+              <button style={s.searchClose} onClick={() => setShowProgramar(false)}>✕</button>
+            </div>
+            <div style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>Asigná cada día de tu rutina a un día de la semana. Así la app sabe qué toca hoy.</div>
+            {diasRutinaActiva.map(dia => (
+              <div key={dia.id} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f0f0', marginBottom: 8 }}>{dia.nombre}</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button style={{ padding: '6px 10px', borderRadius: 6, border: `1px solid ${!programacionForm[dia.id] ? '#f5e642' : '#333'}`, background: !programacionForm[dia.id] ? 'rgba(245,230,66,0.1)' : '#0d0d0d', color: !programacionForm[dia.id] ? '#f5e642' : '#555', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}
+                    onClick={() => { const f = { ...programacionForm }; delete f[dia.id]; setProgramacionForm(f) }}>Sin día</button>
+                  {DIAS_SEMANA.map(d => {
+                    const asignado = programacionForm[dia.id] === d
+                    const usadoPorOtro = Object.entries(programacionForm).some(([id, dia_s]) => id !== dia.id && dia_s === d)
+                    return (
+                      <button key={d} style={{ padding: '6px 10px', borderRadius: 6, border: `1px solid ${asignado ? '#4ade80' : '#333'}`, background: asignado ? 'rgba(74,222,128,0.1)' : usadoPorOtro ? '#0a0a0a' : '#0d0d0d', color: asignado ? '#4ade80' : usadoPorOtro ? '#333' : '#888', fontSize: 11, cursor: usadoPorOtro ? 'default' : 'pointer', fontFamily: 'inherit', fontWeight: asignado ? 700 : 400 }}
+                        onClick={() => { if (!usadoPorOtro) setProgramacionForm({ ...programacionForm, [dia.id]: d }) }}>
+                        {DIAS_SHORT[d]}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+            <button style={s.btn} onClick={guardarProgramacion}>💾 Guardar programación</button>
+          </div>
+        </div>
+      )}
 
       {/* MODAL REGISTRAR SERIES */}
       {ejActual && (
