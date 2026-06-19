@@ -20,7 +20,7 @@ const s = {
   dayInputHidden: { position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' },
   hoyBtnSmall: { background: 'rgba(245,230,66,0.1)', border: '1px solid #f5e64240', borderRadius: 6, color: '#f5e642', fontSize: 11, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, marginBottom: 12, marginLeft: 'auto', display: 'block' },
   bottomTabs: { position: 'fixed', bottom: 0, left: 0, right: 0, background: '#111', borderTop: '1px solid #222', display: 'flex', justifyContent: 'space-around', padding: '10px 0 12px', zIndex: 90 },
-  bottomTab: (a) => ({ background: 'none', border: 'none', color: a ? '#f5e642' : '#666', fontFamily: 'inherit', fontSize: 11, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '4px 16px', fontWeight: a ? 700 : 500 }),
+  bottomTab: (a) => ({ background: 'none', border: 'none', color: a ? '#f5e642' : '#666', fontFamily: 'inherit', fontSize: 10, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '4px 12px', fontWeight: a ? 700 : 500 }),
   bottomIcon: { fontSize: 22, lineHeight: 1 },
   fab: { position: 'fixed', bottom: 80, right: 20, width: 56, height: 56, borderRadius: '50%', background: '#f5e642', color: '#000', border: 'none', fontSize: 28, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(245,230,66,0.4)', zIndex: 95, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   fabMenu: { position: 'fixed', bottom: 150, right: 20, background: '#1a1a1a', border: '1px solid #333', borderRadius: 12, padding: 8, zIndex: 96, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 200, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' },
@@ -101,6 +101,13 @@ const s = {
   weekDayDate: { fontSize: 11, color: '#666' },
   weekDayCal: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1 },
   customAlert: { background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 8, padding: '12px 14px', marginBottom: 14, fontSize: 12, color: '#a855f7' },
+  // Estilos entrenamiento
+  rutinaCard: { background: '#111', border: '1px solid #222', borderRadius: 12, padding: 16, marginBottom: 12, cursor: 'pointer' },
+  ejercicioCard: { background: '#111', border: '1px solid #222', borderRadius: 12, marginBottom: 12, overflow: 'hidden' },
+  serieCard: { background: '#0d0d0d', border: '1px solid #222', borderRadius: 10, padding: 14, marginBottom: 10 },
+  flechasRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  flecha: { background: '#1a1a1a', border: '1px solid #f5e64240', borderRadius: 8, color: '#f5e642', fontSize: 18, width: 38, height: 38, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  flechaInput: { width: 70, background: '#0a0a0a', border: '1px solid #f5e642', borderRadius: 8, padding: '8px', color: '#f5e642', fontSize: 18, textAlign: 'center', outline: 'none', fontFamily: "'Bebas Neue', sans-serif", fontWeight: 700 },
 }
 
 const MOMENTOS = [
@@ -162,13 +169,13 @@ function DayNavigator({ fecha, setFecha }) {
   return (
     <>
       <div style={s.dayNav}>
-        <button style={s.dayArrow} onClick={() => setFecha(sumarDias(fecha, -1))} title="Día anterior">◀</button>
+        <button style={s.dayArrow} onClick={() => setFecha(sumarDias(fecha, -1))}>◀</button>
         <div style={s.dayCenter}>
           {badge && <div style={s.dayBadge}>{badge}</div>}
           <div style={s.dayDate}>📅 {texto}</div>
           <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={s.dayInputHidden} />
         </div>
-        <button style={s.dayArrow} onClick={() => setFecha(sumarDias(fecha, 1))} title="Día siguiente">▶</button>
+        <button style={s.dayArrow} onClick={() => setFecha(sumarDias(fecha, 1))}>▶</button>
       </div>
       {fecha !== hoy && <button style={s.hoyBtnSmall} onClick={() => setFecha(hoy)}>↻ Volver a hoy</button>}
     </>
@@ -209,30 +216,27 @@ export default function Seguimiento({ perfil }) {
   const [pesoInput, setPesoInput] = useState('')
   const [ejercicioInput, setEjercicioInput] = useState({ ejercicio: '', series: '', repeticiones: '', peso_kg: '', notas: '' })
   const [metasForm, setMetasForm] = useState({ calorias: '', proteinas: '', carbohidratos: '', grasas: '' })
-
-  // 🆕 estado para la calculadora de macros (dentro del modal de metas)
   const [showCalc, setShowCalc] = useState(false)
   const [calcForm, setCalcForm] = useState({ edad: '', sexo: 'hombre', peso: '', altura: '', actividad: 'moderado', objetivo: 'bajar de peso' })
-
-  // 🆕 estado para cargar un plan de Mi Alimentación al diario
   const [showCargarPlan, setShowCargarPlan] = useState(false)
   const [planesDisponibles, setPlanesDisponibles] = useState([])
   const [cargandoPlanes, setCargandoPlanes] = useState(false)
   const [aplicandoPlan, setAplicandoPlan] = useState(false)
-
-  // 🆕 estado para modal de producto custom
   const [showCustomModal, setShowCustomModal] = useState(false)
-  const [customForm, setCustomForm] = useState({
-    codigo_barras: '',
-    nombre: '',
-    marca: '',
-    calorias: '',
-    proteinas: '',
-    carbohidratos: '',
-    grasas: '',
-    imagen_url: '',
-    unidades: []
-  })
+  const [customForm, setCustomForm] = useState({ codigo_barras: '', nombre: '', marca: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', imagen_url: '', unidades: [] })
+
+  // ============ ESTADO ENTRENAMIENTO ============
+  const [rutinas, setRutinas] = useState([])
+  const [loadingRutinas, setLoadingRutinas] = useState(true)
+  const [rutinaActiva, setRutinaActiva] = useState(null) // rutina seleccionada para entrenar
+  const [diasRutinaActiva, setDiasRutinaActiva] = useState([])
+  const [diaEntrenoSeleccionado, setDiaEntrenoSeleccionado] = useState(null)
+  const [ejerciciosDiaEntreno, setEjerciciosDiaEntreno] = useState([])
+  const [registrosEntreno, setRegistrosEntreno] = useState({})
+  const [ultimoRegistroEntreno, setUltimoRegistroEntreno] = useState({})
+  const [ejActual, setEjActual] = useState(null)
+  const [seriesEditando, setSeriesEditando] = useState([])
+  const [showSeleccionarRutina, setShowSeleccionarRutina] = useState(false)
 
   const META_AGUA = 8
   const timeoutRef = useRef(null)
@@ -254,7 +258,9 @@ export default function Seguimiento({ perfil }) {
 
   useEffect(() => { cargarTodo() }, [fecha, alumnoIdActual])
   useEffect(() => { cargarHistorial() }, [tab, alumnoIdActual])
+  useEffect(() => { cargarRutinas() }, [alumnoIdActual])
 
+  // ============ CARGA GENERAL ============
   async function cargarTodo() {
     const id = alumnoIdActual
     const [{ data: p }, { data: a }, { data: c }, { data: e }, { data: m }, { data: rec }] = await Promise.all([
@@ -286,6 +292,159 @@ export default function Seguimiento({ perfil }) {
     setHistorial7Dias(arr)
   }
 
+  // ============ RUTINAS ============
+  async function cargarRutinas() {
+    setLoadingRutinas(true)
+    const { data } = await supabase.from('rutinas').select('*').eq('alumno_id', alumnoIdActual).order('created_at', { ascending: false })
+    setRutinas(data || [])
+    setLoadingRutinas(false)
+  }
+
+  async function seleccionarRutina(rutina) {
+    setRutinaActiva(rutina)
+    setShowSeleccionarRutina(false)
+    const { data: dias } = await supabase
+      .from('rutina_dias')
+      .select('*, rutina_ejercicios(*, ejercicios_catalogo(*))')
+      .eq('rutina_id', rutina.id)
+      .order('orden')
+    setDiasRutinaActiva(dias || [])
+    if (dias && dias.length > 0) {
+      setDiaEntrenoSeleccionado(dias[0])
+      cargarRegistrosDia(dias[0])
+    }
+  }
+
+  async function cargarRegistrosDia(dia) {
+    if (!dia) return
+    // Los ejercicios vienen del día de la rutina
+    const ejercicios = dia.rutina_ejercicios || []
+    setEjerciciosDiaEntreno(ejercicios)
+
+    // Cargar registros de HOY para cada ejercicio de la rutina
+    const ids = ejercicios.map(e => e.id)
+    if (ids.length === 0) return
+
+    const hoy = fechaHoy()
+    const { data: regs } = await supabase
+      .from('registros_series_rutina')
+      .select('*')
+      .eq('alumno_id', alumnoIdActual)
+      .eq('fecha', hoy)
+      .in('rutina_ejercicio_id', ids)
+
+    const mapRegs = {}
+    ;(regs || []).forEach(r => {
+      if (!mapRegs[r.rutina_ejercicio_id]) mapRegs[r.rutina_ejercicio_id] = []
+      mapRegs[r.rutina_ejercicio_id].push(r)
+    })
+    Object.keys(mapRegs).forEach(k => mapRegs[k].sort((a, b) => a.numero_serie - b.numero_serie))
+    setRegistrosEntreno(mapRegs)
+
+    // Último registro de cada ejercicio
+    const ultMap = {}
+    for (const ej of ejercicios) {
+      const { data: ult } = await supabase
+        .from('registros_series_rutina')
+        .select('*')
+        .eq('alumno_id', alumnoIdActual)
+        .eq('rutina_ejercicio_id', ej.id)
+        .neq('fecha', hoy)
+        .order('fecha', { ascending: false })
+        .limit(1)
+      if (ult && ult[0]) ultMap[ej.id] = ult[0]
+    }
+    setUltimoRegistroEntreno(ultMap)
+  }
+
+  function abrirEjercicioEntreno(ej) {
+    setEjActual(ej)
+    const yaRegistrados = registrosEntreno[ej.id] || []
+    if (yaRegistrados.length > 0) {
+      setSeriesEditando(yaRegistrados.map(r => ({
+        numero_serie: r.numero_serie,
+        reps: r.reps_hechas,
+        peso: r.peso_kg,
+        rir: r.rir,
+        notas: r.notas || ''
+      })))
+    } else {
+      const ult = ultimoRegistroEntreno[ej.id]
+      const seriesPlan = parseInt(ej.series) || 3
+      const repsPlan = parseInt(ej.repeticiones) || 10
+      const series = []
+      for (let i = 1; i <= seriesPlan; i++) {
+        series.push({
+          numero_serie: i,
+          reps: ult?.reps_hechas || repsPlan,
+          peso: ult?.peso_kg || 0,
+          rir: ej.rir || 2,
+          notas: ''
+        })
+      }
+      setSeriesEditando(series)
+    }
+  }
+
+  function ajustarValor(idx, campo, delta) {
+    const nuevas = [...seriesEditando]
+    const actual = parseFloat(nuevas[idx][campo]) || 0
+    let nuevo = actual + delta
+    if (nuevo < 0) nuevo = 0
+    nuevas[idx][campo] = nuevo
+    setSeriesEditando(nuevas)
+  }
+
+  function actualizarSerie(idx, campo, valor) {
+    const nuevas = [...seriesEditando]
+    nuevas[idx][campo] = valor
+    setSeriesEditando(nuevas)
+  }
+
+  function agregarSerieExtra() {
+    const ultima = seriesEditando[seriesEditando.length - 1] || { reps: 10, peso: 0, rir: 2 }
+    setSeriesEditando([...seriesEditando, {
+      numero_serie: seriesEditando.length + 1,
+      reps: ultima.reps,
+      peso: ultima.peso,
+      rir: ultima.rir,
+      notas: ''
+    }])
+  }
+
+  function eliminarSerie(idx) {
+    const nuevas = seriesEditando.filter((_, i) => i !== idx)
+    nuevas.forEach((s, i) => s.numero_serie = i + 1)
+    setSeriesEditando(nuevas)
+  }
+
+  async function guardarSeries() {
+    if (!ejActual || seriesEditando.length === 0) return
+    const hoy = fechaHoy()
+    await supabase.from('registros_series_rutina').delete()
+      .eq('alumno_id', alumnoIdActual)
+      .eq('rutina_ejercicio_id', ejActual.id)
+      .eq('fecha', hoy)
+    await supabase.from('registros_series_rutina').insert(
+      seriesEditando.map(s => ({
+        alumno_id: alumnoIdActual,
+        rutina_ejercicio_id: ejActual.id,
+        fecha: hoy,
+        numero_serie: s.numero_serie,
+        reps_hechas: parseInt(s.reps) || 0,
+        peso_kg: parseFloat(s.peso) || 0,
+        rir: parseInt(s.rir) || 0,
+        notas: s.notas || ''
+      }))
+    )
+    setEjActual(null)
+    setSeriesEditando([])
+    setMsg('✓ Series guardadas')
+    setTimeout(() => setMsg(''), 2000)
+    if (diaEntrenoSeleccionado) cargarRegistrosDia(diaEntrenoSeleccionado)
+  }
+
+  // ============ ALIMENTOS ============
   const totalCal = comidas.reduce((s, c) => s + (c.calorias || 0), 0)
   const totalProt = comidas.reduce((s, c) => s + (c.proteinas || 0), 0)
   const totalCarb = comidas.reduce((s, c) => s + (c.carbohidratos || 0), 0)
@@ -298,12 +457,11 @@ export default function Seguimiento({ perfil }) {
     if (q.length < 2) { setResultados([]); setBuscando(false); return }
     setBuscando(true)
     try {
-      const { data: resLocalesDB, error } = await supabase.from('alimentos').select('*').ilike('nombre', `%${q}%`).order('nombre').limit(40)
-      if (error) console.error('Error Supabase:', error)
+      const { data: resLocalesDB } = await supabase.from('alimentos').select('*').ilike('nombre', `%${q}%`).order('nombre').limit(40)
       const resLocales = (resLocalesDB || []).map(a => ({ ...a, fuente: 'local' }))
       setResultados(resLocales)
       setBuscando(false)
-    } catch (err) { console.error('Error búsqueda local:', err); setResultados([]); setBuscando(false) }
+    } catch (err) { setResultados([]); setBuscando(false) }
     timeoutRef.current = setTimeout(async () => {
       try {
         const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=20&lc=es`
@@ -326,217 +484,68 @@ export default function Seguimiento({ perfil }) {
           proteinas: parseFloat((p.nutriments['proteins_100g'] || 0).toFixed(1)),
           carbohidratos: parseFloat((p.nutriments['carbohydrates_100g'] || 0).toFixed(1)),
           grasas: parseFloat((p.nutriments['fat_100g'] || 0).toFixed(1)),
-          unidades: [],
-          fuente: 'openfoodfacts'
+          unidades: [], fuente: 'openfoodfacts'
         })).slice(0, 15)
-        setResultados(prev => { const sololocales = prev.filter(x => x.fuente === 'local'); return [...sololocales, ...resAPI] })
-      } catch (err) { console.log('OFF no disponible:', err.message) }
+        setResultados(prev => { const soloLocales = prev.filter(x => x.fuente === 'local'); return [...soloLocales, ...resAPI] })
+      } catch (err) {}
     }, 500)
   }
 
-  // 🆕 detecta productos sin datos y abre modal custom
   async function onScanBarcode(codigo) {
     setShowEscaner(false)
     setBuscando(true)
-
-    // 1. Buscar primero en la base local
-    const { data: localData } = await supabase
-      .from('alimentos')
-      .select('*')
-      .eq('codigo_barras', codigo)
-      .maybeSingle()
-
-    if (localData) {
-      seleccionarAlimento({ ...localData, fuente: 'local' })
-      setBuscando(false)
-      setMsg(`✅ Encontrado: ${localData.nombre}`)
-      setTimeout(() => setMsg(''), 2000)
-      return
-    }
-
-    // 2. Si no está, buscar en Open Food Facts
+    const { data: localData } = await supabase.from('alimentos').select('*').eq('codigo_barras', codigo).maybeSingle()
+    if (localData) { seleccionarAlimento({ ...localData, fuente: 'local' }); setBuscando(false); setMsg(`✅ Encontrado: ${localData.nombre}`); setTimeout(() => setMsg(''), 2000); return }
     try {
       const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`
       const response = await fetch(url)
       const data = await response.json()
-
       if (data.status === 1 && data.product) {
         const p = data.product
         const tieneNombre = p.product_name && p.product_name.trim().length > 0
         const tieneCalorias = p.nutriments && p.nutriments['energy-kcal_100g'] && p.nutriments['energy-kcal_100g'] > 0
-
-        // 🆕 SI NO TIENE DATOS COMPLETOS → ABRIR MODAL CUSTOM (pre-relleno)
         if (!tieneNombre || !tieneCalorias) {
-          setCustomForm({
-            codigo_barras: codigo,
-            nombre: tieneNombre ? p.product_name : '',
-            marca: p.brands || '',
-            calorias: tieneCalorias ? Math.round(p.nutriments['energy-kcal_100g']) : '',
-            proteinas: p.nutriments?.['proteins_100g'] ? parseFloat(p.nutriments['proteins_100g']).toFixed(1) : '',
-            carbohidratos: p.nutriments?.['carbohydrates_100g'] ? parseFloat(p.nutriments['carbohydrates_100g']).toFixed(1) : '',
-            grasas: p.nutriments?.['fat_100g'] ? parseFloat(p.nutriments['fat_100g']).toFixed(1) : '',
-            imagen_url: p.image_small_url || p.image_url || '',
-            unidades: []
-          })
-          setShowCustomModal(true)
-          setBuscando(false)
-          setMsg('⚠️ Producto sin datos completos. Cargá lo que falta.')
-          setTimeout(() => setMsg(''), 3000)
-          return
+          setCustomForm({ codigo_barras: codigo, nombre: tieneNombre ? p.product_name : '', marca: p.brands || '', calorias: tieneCalorias ? Math.round(p.nutriments['energy-kcal_100g']) : '', proteinas: p.nutriments?.['proteins_100g'] ? parseFloat(p.nutriments['proteins_100g']).toFixed(1) : '', carbohidratos: p.nutriments?.['carbohydrates_100g'] ? parseFloat(p.nutriments['carbohydrates_100g']).toFixed(1) : '', grasas: p.nutriments?.['fat_100g'] ? parseFloat(p.nutriments['fat_100g']).toFixed(1) : '', imagen_url: p.image_small_url || p.image_url || '', unidades: [] })
+          setShowCustomModal(true); setBuscando(false); return
         }
-
-        // SI TIENE DATOS COMPLETOS → guardar en base + abrir porción
-        const alimento = {
-          codigo_barras: codigo,
-          nombre: p.product_name,
-          marca: p.brands || '',
-          imagen_url: p.image_small_url || p.image_url || null,
-          calorias: Math.round(p.nutriments['energy-kcal_100g']),
-          proteinas: parseFloat(p.nutriments['proteins_100g'] || 0),
-          carbohidratos: parseFloat(p.nutriments['carbohydrates_100g'] || 0),
-          grasas: parseFloat(p.nutriments['fat_100g'] || 0),
-          unidades: [],
-          categoria: 'Escaneado',
-          pais: p.countries || 'Internacional',
-          popularidad: 1
-        }
-
-        const { data: insertado } = await supabase
-          .from('alimentos')
-          .insert(alimento)
-          .select()
-          .single()
-
-        if (insertado) {
-          seleccionarAlimento({ ...insertado, fuente: 'local' })
-          setMsg(`✅ ${insertado.nombre} agregado a la base 🎉`)
-        } else {
-          // Fallback si falla el insert (probablemente nombre duplicado)
-          const { data: existente } = await supabase
-            .from('alimentos')
-            .select('*')
-            .or(`codigo_barras.eq.${codigo},nombre.eq.${alimento.nombre}`)
-            .maybeSingle()
-
-          if (existente) {
-            seleccionarAlimento({ ...existente, fuente: 'local' })
-            setMsg(`✅ Encontrado: ${existente.nombre}`)
-          } else {
-            seleccionarAlimento({ ...alimento, id: `off-${codigo}`, fuente: 'openfoodfacts' })
-            setMsg(`✅ ${alimento.nombre} cargado`)
-          }
-        }
+        const alimento = { codigo_barras: codigo, nombre: p.product_name, marca: p.brands || '', imagen_url: p.image_small_url || p.image_url || null, calorias: Math.round(p.nutriments['energy-kcal_100g']), proteinas: parseFloat(p.nutriments['proteins_100g'] || 0), carbohidratos: parseFloat(p.nutriments['carbohydrates_100g'] || 0), grasas: parseFloat(p.nutriments['fat_100g'] || 0), unidades: [], categoria: 'Escaneado', pais: p.countries || 'Internacional', popularidad: 1 }
+        const { data: insertado } = await supabase.from('alimentos').insert(alimento).select().single()
+        if (insertado) { seleccionarAlimento({ ...insertado, fuente: 'local' }); setMsg(`✅ ${insertado.nombre} agregado`) }
+        else { seleccionarAlimento({ ...alimento, id: `off-${codigo}`, fuente: 'openfoodfacts' }); setMsg(`✅ ${alimento.nombre} cargado`) }
         setTimeout(() => setMsg(''), 2500)
       } else {
-        // 🆕 PRODUCTO NO ENCONTRADO EN OFF → ABRIR MODAL CUSTOM (vacío)
-        setCustomForm({
-          codigo_barras: codigo,
-          nombre: '',
-          marca: '',
-          calorias: '',
-          proteinas: '',
-          carbohidratos: '',
-          grasas: '',
-          imagen_url: '',
-          unidades: []
-        })
-        setShowCustomModal(true)
-        setMsg('🆕 Producto nuevo. Cargá los datos.')
-        setTimeout(() => setMsg(''), 3000)
+        setCustomForm({ codigo_barras: codigo, nombre: '', marca: '', calorias: '', proteinas: '', carbohidratos: '', grasas: '', imagen_url: '', unidades: [] })
+        setShowCustomModal(true); setMsg('🆕 Producto nuevo.'); setTimeout(() => setMsg(''), 3000)
       }
-    } catch (err) {
-      setMsg('❌ Error al buscar producto')
-      setTimeout(() => setMsg(''), 3000)
-    }
+    } catch (err) { setMsg('❌ Error al buscar producto'); setTimeout(() => setMsg(''), 3000) }
     setBuscando(false)
   }
 
-  // 🆕 guardar producto custom desde el modal
   async function guardarCustom() {
-    if (!customForm.nombre || !customForm.calorias) {
-      setMsg('⚠️ Faltan nombre y calorías')
-      setTimeout(() => setMsg(''), 2000)
-      return
-    }
-
-    const alimento = {
-      codigo_barras: customForm.codigo_barras || null,
-      nombre: customForm.nombre.trim(),
-      marca: customForm.marca.trim(),
-      imagen_url: customForm.imagen_url || null,
-      calorias: parseFloat(customForm.calorias) || 0,
-      proteinas: parseFloat(customForm.proteinas) || 0,
-      carbohidratos: parseFloat(customForm.carbohidratos) || 0,
-      grasas: parseFloat(customForm.grasas) || 0,
-      unidades: (customForm.unidades || []).filter(u => u.nombre && u.gramos).map(u => ({
-        nombre: u.nombre.trim(),
-        gramos: parseFloat(u.gramos) || 100
-      })),
-      categoria: 'Custom',
-      pais: 'Argentina',
-      popularidad: 1
-    }
-
-    const { data: insertado, error } = await supabase
-      .from('alimentos')
-      .insert(alimento)
-      .select()
-      .single()
-
-    if (insertado) {
-      setShowCustomModal(false)
-      seleccionarAlimento({ ...insertado, fuente: 'custom' })
-      setMsg(`✅ ${insertado.nombre} agregado a la base 🎉`)
-      setTimeout(() => setMsg(''), 2500)
-    } else {
-      // Si falla por nombre duplicado, buscar el existente
-      const { data: existente } = await supabase
-        .from('alimentos')
-        .select('*')
-        .eq('nombre', alimento.nombre)
-        .maybeSingle()
-
-      if (existente) {
-        setShowCustomModal(false)
-        seleccionarAlimento({ ...existente, fuente: 'local' })
-        setMsg(`✅ Ya existía: ${existente.nombre}`)
-        setTimeout(() => setMsg(''), 2500)
-      } else {
-        setMsg(`❌ Error al guardar: ${error?.message || 'desconocido'}`)
-        setTimeout(() => setMsg(''), 3000)
-      }
-    }
+    if (!customForm.nombre || !customForm.calorias) { setMsg('⚠️ Faltan nombre y calorías'); setTimeout(() => setMsg(''), 2000); return }
+    const alimento = { codigo_barras: customForm.codigo_barras || null, nombre: customForm.nombre.trim(), marca: customForm.marca.trim(), imagen_url: customForm.imagen_url || null, calorias: parseFloat(customForm.calorias) || 0, proteinas: parseFloat(customForm.proteinas) || 0, carbohidratos: parseFloat(customForm.carbohidratos) || 0, grasas: parseFloat(customForm.grasas) || 0, unidades: (customForm.unidades || []).filter(u => u.nombre && u.gramos).map(u => ({ nombre: u.nombre.trim(), gramos: parseFloat(u.gramos) || 100 })), categoria: 'Custom', pais: 'Argentina', popularidad: 1 }
+    const { data: insertado } = await supabase.from('alimentos').insert(alimento).select().single()
+    if (insertado) { setShowCustomModal(false); seleccionarAlimento({ ...insertado, fuente: 'custom' }); setMsg(`✅ ${insertado.nombre} agregado`); setTimeout(() => setMsg(''), 2500) }
+    else { const { data: existente } = await supabase.from('alimentos').select('*').eq('nombre', alimento.nombre).maybeSingle(); if (existente) { setShowCustomModal(false); seleccionarAlimento({ ...existente, fuente: 'local' }) } }
   }
 
   function abrirBuscador(momento) { setSearchMomento(momento); setShowSearch(true); setBusqueda(''); setResultados([]); setSearchTab('todo') }
 
   function seleccionarAlimento(al) {
     setAlimentoSel(al)
-    if (al.unidades && Array.isArray(al.unidades) && al.unidades.length > 0) {
-      setUnidadSel(al.unidades[0])
-      setCantidad(1)
-    } else {
-      setUnidadSel({ nombre: 'Por gramos', gramos: 100, esGramos: true })
-      setCantidad(100)
-    }
+    if (al.unidades && Array.isArray(al.unidades) && al.unidades.length > 0) { setUnidadSel(al.unidades[0]); setCantidad(1) }
+    else { setUnidadSel({ nombre: 'Por gramos', gramos: 100, esGramos: true }); setCantidad(100) }
   }
 
   function calcularPorGramos(al, g) {
     const factor = parseFloat(g) / 100
-    return {
-      calorias: Math.round((al.calorias || 0) * factor * 10) / 10,
-      proteinas: Math.round((al.proteinas || 0) * factor * 10) / 10,
-      carbohidratos: Math.round((al.carbohidratos || 0) * factor * 10) / 10,
-      grasas: Math.round((al.grasas || 0) * factor * 10) / 10,
-    }
+    return { calorias: Math.round((al.calorias || 0) * factor * 10) / 10, proteinas: Math.round((al.proteinas || 0) * factor * 10) / 10, carbohidratos: Math.round((al.carbohidratos || 0) * factor * 10) / 10, grasas: Math.round((al.grasas || 0) * factor * 10) / 10 }
   }
 
   function calcularGramosFinal() {
     if (!unidadSel) return 0
     const cant = parseFloat(cantidad) || 0
-    // Si es modo "por gramos", la cantidad SON los gramos directamente
     if (unidadSel.esGramos) return cant
-    // Si es una unidad (1 vaso, 1 cucharón), multiplicamos por los gramos de esa unidad
     return unidadSel.gramos * cant
   }
 
@@ -549,38 +558,24 @@ export default function Seguimiento({ perfil }) {
     if (gFinal <= 0) return
     const m = calcularPorGramos(alimentoSel, gFinal)
     let nombreCompleto
-    if (unidadSel.esGramos) {
-      nombreCompleto = `${alimentoSel.nombre}${alimentoSel.marca ? ` (${alimentoSel.marca})` : ''} - ${gFinal}g`
-    } else {
-      const cant = parseFloat(cantidad) || 1
-      const cantStr = cant === 1 ? '' : `${cant}× `
-      nombreCompleto = `${cantStr}${unidadSel.nombre} - ${alimentoSel.nombre}${alimentoSel.marca ? ` (${alimentoSel.marca})` : ''}`
-    }
-    await supabase.from('registros_comidas').insert({
-      alumno_id: alumnoIdActual, fecha, momento: searchMomento,
-      nombre_manual: nombreCompleto,
-      calorias: m.calorias, proteinas: m.proteinas, carbohidratos: m.carbohidratos, grasas: m.grasas, gramos: gFinal
-    })
+    if (unidadSel.esGramos) nombreCompleto = `${alimentoSel.nombre}${alimentoSel.marca ? ` (${alimentoSel.marca})` : ''} - ${gFinal}g`
+    else { const cant = parseFloat(cantidad) || 1; nombreCompleto = `${cant === 1 ? '' : cant + '× '}${unidadSel.nombre} - ${alimentoSel.nombre}${alimentoSel.marca ? ` (${alimentoSel.marca})` : ''}` }
+    await supabase.from('registros_comidas').insert({ alumno_id: alumnoIdActual, fecha, momento: searchMomento, nombre_manual: nombreCompleto, calorias: m.calorias, proteinas: m.proteinas, carbohidratos: m.carbohidratos, grasas: m.grasas, gramos: gFinal })
     try { await supabase.from('alimentos_recientes').insert({ alumno_id: alumnoIdActual, alimento_data: alimentoSel, ultima_vez: new Date().toISOString() }) } catch(e) {}
-    setAlimentoSel(null); setUnidadSel(null); setCantidad(1)
-    setShowSearch(false); setBusqueda(''); setResultados([])
+    setAlimentoSel(null); setUnidadSel(null); setCantidad(1); setShowSearch(false); setBusqueda(''); setResultados([])
     setMsg('Comida agregada ✓'); cargarTodo(); setTimeout(() => setMsg(''), 2000)
   }
 
   async function eliminarComida(id) { await supabase.from('registros_comidas').delete().eq('id', id); cargarTodo() }
 
-  // 🆕 Abre el modal y trae los planes que el alumno ya armó en Mi Alimentación
   async function abrirCargarPlan() {
-    setShowCargarPlan(true)
-    setCargandoPlanes(true)
+    setShowCargarPlan(true); setCargandoPlanes(true)
     const { data } = await supabase.from('planes_alimentacion').select('*').eq('alumno_id', alumnoIdActual).order('created_at', { ascending: false })
-    setPlanesDisponibles(data || [])
-    setCargandoPlanes(false)
+    setPlanesDisponibles(data || []); setCargandoPlanes(false)
   }
 
-  // 🆕 Carga TODO un plan al diario del día, cada comida en su momento
   async function aplicarPlanAlDia(plan) {
-    if (!window.confirm(`¿Cargar "${plan.nombre}" en el día? Se van a sumar sus comidas a tu diario.`)) return
+    if (!window.confirm(`¿Cargar "${plan.nombre}" en el día?`)) return
     setAplicandoPlan(true)
     const momentosValidos = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena', 'Snack']
     const mapMomento = (m) => momentosValidos.includes(m) ? m : 'Snack'
@@ -588,31 +583,19 @@ export default function Seguimiento({ perfil }) {
     const inserts = []
     for (const comida of (comidasPlan || [])) {
       for (const item of (comida.plan_comida_items || [])) {
-        inserts.push({
-          alumno_id: alumnoIdActual,
-          fecha,
-          momento: mapMomento(comida.momento),
-          nombre_manual: `${item.nombre}${item.cantidad_gramos ? ` - ${item.cantidad_gramos}g` : ''}`,
-          calorias: item.calorias || 0,
-          proteinas: item.proteinas || 0,
-          carbohidratos: item.carbohidratos || 0,
-          grasas: item.grasas || 0,
-          gramos: item.cantidad_gramos || 0
-        })
+        inserts.push({ alumno_id: alumnoIdActual, fecha, momento: mapMomento(comida.momento), nombre_manual: `${item.nombre}${item.cantidad_gramos ? ` - ${item.cantidad_gramos}g` : ''}`, calorias: item.calorias || 0, proteinas: item.proteinas || 0, carbohidratos: item.carbohidratos || 0, grasas: item.grasas || 0, gramos: item.cantidad_gramos || 0 })
       }
     }
     if (inserts.length > 0) { await supabase.from('registros_comidas').insert(inserts) }
-    setAplicandoPlan(false)
-    setShowCargarPlan(false)
-    setTab('diario')
+    setAplicandoPlan(false); setShowCargarPlan(false); setTab('diario')
     setMsg(`✅ Plan cargado (${inserts.length} alimentos)`); cargarTodo(); setTimeout(() => setMsg(''), 2500)
   }
 
   async function toggleVaso(i) {
     const nuevos = i + 1 === vasosHoy ? i : i + 1
     const { data: existing } = await supabase.from('registros_agua').select('*').eq('alumno_id', alumnoIdActual).eq('fecha', fecha).maybeSingle()
-    if (existing) { await supabase.from('registros_agua').update({ vasos: nuevos }).eq('id', existing.id) }
-    else { await supabase.from('registros_agua').insert({ alumno_id: alumnoIdActual, vasos: nuevos, fecha }) }
+    if (existing) await supabase.from('registros_agua').update({ vasos: nuevos }).eq('id', existing.id)
+    else await supabase.from('registros_agua').insert({ alumno_id: alumnoIdActual, vasos: nuevos, fecha })
     setVasosHoy(nuevos)
   }
 
@@ -624,37 +607,23 @@ export default function Seguimiento({ perfil }) {
 
   async function guardarEjercicio() {
     if (!ejercicioInput.ejercicio) return
-    await supabase.from('registros_entrenamiento').insert({
-      alumno_id: alumnoIdActual, fecha, ejercicio: ejercicioInput.ejercicio,
-      series: parseInt(ejercicioInput.series) || 0, repeticiones: parseInt(ejercicioInput.repeticiones) || 0,
-      peso_kg: parseFloat(ejercicioInput.peso_kg) || 0, notas: ejercicioInput.notas
-    })
+    await supabase.from('registros_entrenamiento').insert({ alumno_id: alumnoIdActual, fecha, ejercicio: ejercicioInput.ejercicio, series: parseInt(ejercicioInput.series) || 0, repeticiones: parseInt(ejercicioInput.repeticiones) || 0, peso_kg: parseFloat(ejercicioInput.peso_kg) || 0, notas: ejercicioInput.notas })
     setEjercicioInput({ ejercicio: '', series: '', repeticiones: '', peso_kg: '', notas: '' })
     setShowEjercicioModal(false); setMsg('Ejercicio agregado ✓'); cargarTodo(); setTimeout(() => setMsg(''), 2000)
   }
 
   async function eliminarEjercicio(id) { await supabase.from('registros_entrenamiento').delete().eq('id', id); cargarTodo() }
 
-  function abrirModalMetas() {
-    setMetasForm({ calorias: metas.calorias, proteinas: metas.proteinas, carbohidratos: metas.carbohidratos, grasas: metas.grasas })
-    setShowMetasModal(true)
-  }
+  function abrirModalMetas() { setMetasForm({ calorias: metas.calorias, proteinas: metas.proteinas, carbohidratos: metas.carbohidratos, grasas: metas.grasas }); setShowMetasModal(true) }
 
   async function guardarMetas() {
-    const nuevas = {
-      alumno_id: alumnoIdActual,
-      calorias: parseFloat(metasForm.calorias) || 0,
-      proteinas: parseFloat(metasForm.proteinas) || 0,
-      carbohidratos: parseFloat(metasForm.carbohidratos) || 0,
-      grasas: parseFloat(metasForm.grasas) || 0
-    }
+    const nuevas = { alumno_id: alumnoIdActual, calorias: parseFloat(metasForm.calorias) || 0, proteinas: parseFloat(metasForm.proteinas) || 0, carbohidratos: parseFloat(metasForm.carbohidratos) || 0, grasas: parseFloat(metasForm.grasas) || 0 }
     const { data: existing } = await supabase.from('metas_nutricionales').select('*').eq('alumno_id', alumnoIdActual).maybeSingle()
-    if (existing) { await supabase.from('metas_nutricionales').update(nuevas).eq('alumno_id', alumnoIdActual) }
-    else { await supabase.from('metas_nutricionales').insert(nuevas) }
+    if (existing) await supabase.from('metas_nutricionales').update(nuevas).eq('alumno_id', alumnoIdActual)
+    else await supabase.from('metas_nutricionales').insert(nuevas)
     setMetas(nuevas); setShowMetasModal(false); setMsg('Metas actualizadas ✓'); cargarTodo(); setTimeout(() => setMsg(''), 2000)
   }
 
-  // 🆕 calcula calorías y macros desde los datos del alumno y los carga en el formulario de metas
   function calcularMacrosAuto() {
     const p = parseFloat(calcForm.peso), a = parseFloat(calcForm.altura), e = parseInt(calcForm.edad)
     if (!p || !a || !e) { setMsg('⚠️ Completá edad, peso y altura'); setTimeout(() => setMsg(''), 2500); return }
@@ -668,7 +637,7 @@ export default function Seguimiento({ perfil }) {
     const minG = Math.round(p * 0.6); if (grasas < minG) grasas = minG
     let carbohidratos = Math.round((calorias - proteinas * 4 - grasas * 9) / 4); if (carbohidratos < 0) carbohidratos = 0
     setMetasForm({ calorias, proteinas, carbohidratos, grasas })
-    setMsg('✅ Macros calculados. Revisá y guardá abajo.'); setTimeout(() => setMsg(''), 2500)
+    setMsg('✅ Macros calculados.'); setTimeout(() => setMsg(''), 2500)
   }
 
   const calMacros = (parseFloat(metasForm.proteinas) || 0) * 4 + (parseFloat(metasForm.carbohidratos) || 0) * 4 + (parseFloat(metasForm.grasas) || 0) * 9
@@ -677,8 +646,7 @@ export default function Seguimiento({ perfil }) {
   const macrosOk = Math.abs(diff) <= 50
 
   const resultadosVisibles = searchTab === 'recientes' ? recientes.map(r => ({ ...r.alimento_data, fuente: r.alimento_data?.fuente || 'local' })) : resultados
-  const promedio7Dias = historial7Dias.length > 0 ? Math.round(historial7Dias.reduce((s, d) => s + d.calorias, 0) / historial7Dias.filter(d => d.calorias > 0).length || 0) : 0
-
+  const promedio7Dias = historial7Dias.length > 0 ? Math.round(historial7Dias.reduce((s, d) => s + d.calorias, 0) / (historial7Dias.filter(d => d.calorias > 0).length || 1)) : 0
   const unidadesDisponibles = alimentoSel?.unidades && Array.isArray(alimentoSel.unidades) && alimentoSel.unidades.length > 0
     ? [...alimentoSel.unidades, { nombre: 'Por gramos (escribir cantidad)', gramos: 100, esGramos: true }]
     : [{ nombre: 'Por gramos (escribir cantidad)', gramos: 100, esGramos: true }]
@@ -701,8 +669,9 @@ export default function Seguimiento({ perfil }) {
 
         {msg && <div style={s.success}>{msg}</div>}
 
-        <DayNavigator fecha={fecha} setFecha={setFecha} />
+        {tab !== 'entreno' && <DayNavigator fecha={fecha} setFecha={setFecha} />}
 
+        {/* =================== PANEL =================== */}
         {tab === 'panel' && (
           <div>
             <div style={s.card}>
@@ -712,37 +681,30 @@ export default function Seguimiento({ perfil }) {
                 <div style={s.circleStats}>
                   <div style={s.circleStat}><span style={s.circleIcon}>🎯</span><div><div style={s.circleLabel}>Objetivo</div><div style={s.circleValue}>{metas.calorias}</div></div></div>
                   <div style={s.circleStat}><span style={s.circleIcon}>🍴</span><div><div style={s.circleLabel}>Alimentos</div><div style={s.circleValue}>{Math.round(totalCal)}</div></div></div>
-                  <div style={s.circleStat}><span style={s.circleIcon}>🔥</span><div><div style={s.circleLabel}>Ejercicio</div><div style={s.circleValue}>{ejercicios.length}</div></div></div>
+                  <div style={s.circleStat}><span style={s.circleIcon}>🔥</span><div><div style={s.circleLabel}>Ejercicios</div><div style={s.circleValue}>{ejercicios.length}</div></div></div>
                 </div>
               </div>
               {totalCal > metas.calorias && (
                 <div style={{ background: 'rgba(255,77,77,0.1)', border: '1px solid rgba(255,77,77,0.3)', borderRadius: 8, padding: '12px 14px', marginTop: 14, textAlign: 'center' }}>
-                  <div style={{ fontSize: 11, color: '#ff4d4d', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>🚨 Te pasaste</div>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: '#ff4d4d', letterSpacing: 1 }}>+{Math.round(totalCal - metas.calorias)} kcal</div>
-                  <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>por encima de tu objetivo</div>
-                </div>
-              )}
-              {totalCal > 0 && totalCal <= metas.calorias && totalCal >= metas.calorias * 0.95 && (
-                <div style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '12px 14px', marginTop: 14, textAlign: 'center' }}>
-                  <div style={{ fontSize: 12, color: '#4ade80', fontWeight: 700 }}>✅ ¡Llegaste a tu objetivo!</div>
+                  <div style={{ fontSize: 11, color: '#ff4d4d', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>🚨 Te pasaste</div>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: '#ff4d4d' }}>+{Math.round(totalCal - metas.calorias)} kcal</div>
                 </div>
               )}
             </div>
-
             <div style={s.card}>
               <div style={s.cardTitle}>Macros del día</div>
               <div style={s.macroBar}>
                 {[
-                  { label: 'Proteínas', actual: totalProt, meta: metas.proteinas, color: '#4ade80', unit: 'g' },
-                  { label: 'Carbos', actual: totalCarb, meta: metas.carbohidratos, color: '#f5e642', unit: 'g' },
-                  { label: 'Grasas', actual: totalGras, meta: metas.grasas, color: '#f97316', unit: 'g' },
+                  { label: 'Proteínas', actual: totalProt, meta: metas.proteinas, color: '#4ade80' },
+                  { label: 'Carbos', actual: totalCarb, meta: metas.carbohidratos, color: '#f5e642' },
+                  { label: 'Grasas', actual: totalGras, meta: metas.grasas, color: '#f97316' },
                 ].map(m => {
                   const pct = m.meta > 0 ? (m.actual / m.meta) * 100 : 0
                   return (
                     <div key={m.label} style={s.macroCard}>
                       <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{m.label}</div>
-                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: m.color, letterSpacing: 1 }}>
-                        {Math.round(m.actual)}<span style={{ fontSize: 14, color: '#444' }}>/{m.meta}{m.unit}</span>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: m.color }}>
+                        {Math.round(m.actual)}<span style={{ fontSize: 14, color: '#444' }}>/{m.meta}g</span>
                       </div>
                       <div style={s.macroBarBg}><div style={s.macroBarFill(m.color, pct)} /></div>
                     </div>
@@ -750,42 +712,38 @@ export default function Seguimiento({ perfil }) {
                 })}
               </div>
             </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
               <div style={s.card}>
                 <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>💧 Agua</div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color: '#60a5fa', letterSpacing: 1 }}>{vasosHoy}/{META_AGUA}</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color: '#60a5fa' }}>{vasosHoy}/{META_AGUA}</div>
                 <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>{vasosHoy * 250} ml</div>
               </div>
               <div style={s.card}>
                 <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>⚖️ Peso</div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color: '#f5e642', letterSpacing: 1 }}>{ultimoPeso || '—'}</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color: '#f5e642' }}>{ultimoPeso || '—'}</div>
                 <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>kg</div>
               </div>
             </div>
           </div>
         )}
 
+        {/* =================== DIARIO =================== */}
         {tab === 'diario' && (
           <div>
-            <button
-              onClick={abrirCargarPlan}
-              style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid #4ade8040', borderRadius: 10, padding: '14px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%', marginBottom: 14 }}
-            >
+            <button onClick={abrirCargarPlan} style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid #4ade8040', borderRadius: 10, padding: '14px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%', marginBottom: 14 }}>
               📋 Cargar uno de mis planes al día
             </button>
             {totalCal > metas.calorias ? (
               <div style={{ background: '#111', borderRadius: 12, border: '1px solid rgba(255,77,77,0.3)', padding: 18, marginBottom: 14, textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: '#ff4d4d', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>🚨 Te pasaste por</div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 38, color: '#ff4d4d', letterSpacing: 1, margin: '6px 0' }}>+{Math.round(totalCal - metas.calorias)}</div>
-                <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 1 }}>kcal sobre tu objetivo</div>
-                <div style={{ fontSize: 12, color: '#666', marginTop: 8 }}><span style={{ color: '#888' }}>{metas.calorias}</span> objetivo · <span style={{ color: '#ff4d4d', fontWeight: 700 }}>{Math.round(totalCal)}</span> consumidas</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 38, color: '#ff4d4d', margin: '6px 0' }}>+{Math.round(totalCal - metas.calorias)}</div>
+                <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>kcal sobre tu objetivo</div>
               </div>
             ) : (
               <div style={{ background: '#111', borderRadius: 12, border: '1px solid #222', padding: 18, marginBottom: 14, textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>Calorías restantes</div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 38, color: '#f5e642', letterSpacing: 1, margin: '6px 0' }}>{Math.round(Math.max(0, metas.calorias - totalCal))}</div>
-                <div style={{ fontSize: 12, color: '#666' }}><span style={{ color: '#888' }}>{metas.calorias}</span> objetivo − <span style={{ color: '#888' }}>{Math.round(totalCal)}</span> consumidas</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 38, color: '#f5e642', margin: '6px 0' }}>{Math.round(Math.max(0, metas.calorias - totalCal))}</div>
+                <div style={{ fontSize: 12, color: '#666' }}>{metas.calorias} objetivo − {Math.round(totalCal)} consumidas</div>
               </div>
             )}
             {MOMENTOS.map(mom => {
@@ -814,6 +772,126 @@ export default function Seguimiento({ perfil }) {
           </div>
         )}
 
+        {/* =================== ENTRENO =================== */}
+        {tab === 'entreno' && (
+          <div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, letterSpacing: 1, marginBottom: 4 }}>HOY ENTRENO</div>
+            <div style={{ fontSize: 13, color: '#555', marginBottom: 20 }}>{new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+
+            {/* Sin rutina seleccionada */}
+            {!rutinaActiva && (
+              <>
+                {loadingRutinas ? (
+                  <div style={s.empty}>Cargando rutinas...</div>
+                ) : rutinas.length === 0 ? (
+                  <div style={s.empty}>
+                    <div style={{ fontSize: 48, marginBottom: 12 }}>🏋️</div>
+                    <div style={{ marginBottom: 16 }}>Todavía no tenés rutinas creadas.</div>
+                    <button style={{ background: '#f5e642', color: '#000', border: 'none', borderRadius: 8, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => navigate('/mi-entrenamiento')}>
+                      Ir a crear una rutina
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>Elegí la rutina que vas a hacer hoy:</div>
+                    {rutinas.map(r => (
+                      <div key={r.id} style={s.rutinaCard} onClick={() => seleccionarRutina(r)}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 1, color: '#f5e642' }}>{r.nombre}</div>
+                            {r.descripcion && <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>{r.descripcion}</div>}
+                          </div>
+                          <div style={{ color: '#f5e642', fontSize: 20 }}>›</div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+
+            {/* Rutina seleccionada */}
+            {rutinaActiva && (
+              <>
+                {/* Header rutina activa */}
+                <div style={{ background: 'rgba(245,230,66,0.08)', border: '1px solid #f5e64230', borderRadius: 12, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: '#f5e642', letterSpacing: 1 }}>{rutinaActiva.nombre}</div>
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{diasRutinaActiva.length} días</div>
+                  </div>
+                  <button style={{ background: 'none', border: '1px solid #333', color: '#888', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => { setRutinaActiva(null); setDiasRutinaActiva([]); setDiaEntrenoSeleccionado(null); setEjerciciosDiaEntreno([]) }}>
+                    Cambiar
+                  </button>
+                </div>
+
+                {/* Selector de días */}
+                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, marginBottom: 16 }}>
+                  {diasRutinaActiva.map(dia => (
+                    <button key={dia.id} style={{ background: diaEntrenoSeleccionado?.id === dia.id ? '#f5e642' : '#1a1a1a', color: diaEntrenoSeleccionado?.id === dia.id ? '#000' : '#888', border: 'none', borderRadius: 8, padding: '10px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                      onClick={() => { setDiaEntrenoSeleccionado(dia); cargarRegistrosDia(dia) }}>
+                      {dia.nombre}
+                    </button>
+                  ))}
+                </div>
+
+                {diaEntrenoSeleccionado && (
+                  <>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: '#f5e642', letterSpacing: 1, marginBottom: 4 }}>{diaEntrenoSeleccionado.nombre}</div>
+                    <div style={{ fontSize: 13, color: '#555', marginBottom: 16 }}>{ejerciciosDiaEntreno.length} ejercicios</div>
+
+                    {ejerciciosDiaEntreno.length === 0 ? (
+                      <div style={s.empty}>Este día no tiene ejercicios.</div>
+                    ) : ejerciciosDiaEntreno.map(ej => {
+                      const yaHecho = (registrosEntreno[ej.id] || []).length > 0
+                      const regsHoy = registrosEntreno[ej.id] || []
+                      return (
+                        <div key={ej.id} style={{ ...s.ejercicioCard, border: `1px solid ${yaHecho ? '#4ade8040' : '#222'}` }}>
+                          <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 1, color: '#f0f0f0', marginBottom: 4 }}>
+                                {ej.ejercicios_catalogo?.nombre || ej.nombre_libre}
+                              </div>
+                              <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>
+                                {ej.ejercicios_catalogo?.grupo_muscular}
+                              </div>
+                            </div>
+                            {yaHecho && <span style={{ fontSize: 20 }}>✅</span>}
+                          </div>
+
+                          <div style={{ padding: '10px 16px', background: '#0d0d0d', borderTop: '1px solid #1a1a1a', fontSize: 13, color: '#999' }}>
+                            📋 {ej.series} series × {ej.repeticiones} reps · RIR {ej.rir}
+                            {ej.notas ? ` · ${ej.notas}` : ''}
+                          </div>
+
+                          {/* Resumen de lo hecho hoy */}
+                          {yaHecho && (
+                            <div style={{ padding: '8px 16px', borderTop: '1px solid #111' }}>
+                              <div style={{ fontSize: 11, color: '#4ade80', marginBottom: 4, fontWeight: 700 }}>HOY:</div>
+                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                {regsHoy.map((r, i) => (
+                                  <span key={i} style={{ fontSize: 12, color: '#aaa', background: '#1a1a1a', padding: '3px 8px', borderRadius: 6 }}>
+                                    S{r.numero_serie}: {r.reps_hechas}reps × {r.peso_kg}kg (RIR {r.rir})
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <button style={{ width: '100%', background: yaHecho ? 'rgba(74,222,128,0.15)' : '#f5e642', color: yaHecho ? '#4ade80' : '#000', border: 'none', padding: '14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textTransform: 'uppercase', letterSpacing: 1 }}
+                            onClick={() => abrirEjercicioEntreno(ej)}>
+                            {yaHecho ? '✓ Completado — Editar' : '✓ Registrar series'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* =================== PROGRESO =================== */}
         {tab === 'progreso' && (
           <div>
             <div style={s.card}>
@@ -821,7 +899,7 @@ export default function Seguimiento({ perfil }) {
               <div style={{ marginBottom: 14, padding: '10px 14px', background: '#0d0d0d', borderRadius: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: '#666', textTransform: 'uppercase', letterSpacing: 1 }}>Promedio diario</span>
-                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#f5e642', letterSpacing: 1 }}>{promedio7Dias} kcal</span>
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#f5e642' }}>{promedio7Dias} kcal</span>
                 </div>
               </div>
               {historial7Dias.map(d => {
@@ -835,9 +913,9 @@ export default function Seguimiento({ perfil }) {
                         {badge && <span style={{ color: '#f5e642', marginRight: 6, fontSize: 10, fontWeight: 700 }}>{badge}</span>}
                         {texto}
                       </div>
-                      {d.calorias > 0 && (<div style={{ ...s.macroBarBg, marginTop: 6, width: 120 }}><div style={s.macroBarFill(cumplio ? '#4ade80' : '#f5e642', pct)} /></div>)}
+                      {d.calorias > 0 && <div style={{ ...s.macroBarBg, marginTop: 6, width: 120 }}><div style={s.macroBarFill(cumplio ? '#4ade80' : '#f5e642', pct)} /></div>}
                     </div>
-                    <div style={{ ...s.weekDayCal, color: d.calorias === 0 ? '#444' : (d.calorias > metas.calorias ? '#ff4d4d' : '#f5e642') }}>
+                    <div style={{ ...s.weekDayCal, color: d.calorias === 0 ? '#444' : d.calorias > metas.calorias ? '#ff4d4d' : '#f5e642' }}>
                       {Math.round(d.calorias)} <span style={{ fontSize: 11, color: '#444' }}>kcal</span>
                     </div>
                   </div>
@@ -845,11 +923,10 @@ export default function Seguimiento({ perfil }) {
               })}
               <div style={{ fontSize: 11, color: '#444', marginTop: 12, textAlign: 'center', fontStyle: 'italic' }}>Tocá un día para ver el detalle</div>
             </div>
-
             <div style={s.card}>
               <div style={s.cardTitle}>⚖️ Historial de peso</div>
               {registrosPeso.length === 0 ? (
-                <div style={{ color: '#444', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No hay registros aún. Tocá el "+" para agregar.</div>
+                <div style={{ color: '#444', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No hay registros aún.</div>
               ) : registrosPeso.map((r, i) => {
                 const diffPeso = i < registrosPeso.length - 1 ? r.peso - registrosPeso[i + 1].peso : null
                 return (
@@ -864,12 +941,11 @@ export default function Seguimiento({ perfil }) {
                 )
               })}
             </div>
-
             <div style={s.card}>
               <div style={s.cardTitle}>🏋️ Entrenamientos del día</div>
               {ejercicios.length === 0 ? (
-                <div style={{ color: '#444', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No hay ejercicios. Tocá el "+" para agregar.</div>
-              ) : ejercicios.map((e) => (
+                <div style={{ color: '#444', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>No hay ejercicios.</div>
+              ) : ejercicios.map(e => (
                 <div key={e.id} style={s.detailRow}>
                   <div style={{ flex: 1 }}>
                     <div style={s.detailValue}>{e.ejercicio}</div>
@@ -882,21 +958,21 @@ export default function Seguimiento({ perfil }) {
           </div>
         )}
 
+        {/* =================== MÁS =================== */}
         {tab === 'mas' && (
           <div>
             <div style={s.card}>
               <div style={s.cardTitle}>💧 Agua del día</div>
-              <div style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>Meta: {META_AGUA} vasos (~2L). Tocá un vaso para registrarlo.</div>
+              <div style={{ fontSize: 13, color: '#666', marginBottom: 12 }}>Meta: {META_AGUA} vasos (~2L)</div>
               <div style={s.agua}>
                 {Array.from({ length: META_AGUA }).map((_, i) => (
                   <div key={i} style={s.vaso(i < vasosHoy)} onClick={() => toggleVaso(i)}>💧</div>
                 ))}
               </div>
-              <div style={{ textAlign: 'center', marginTop: 14, fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: vasosHoy >= META_AGUA ? '#4ade80' : '#60a5fa', letterSpacing: 1 }}>
+              <div style={{ textAlign: 'center', marginTop: 14, fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: vasosHoy >= META_AGUA ? '#4ade80' : '#60a5fa' }}>
                 {vasosHoy} / {META_AGUA}
               </div>
             </div>
-
             <div style={s.card}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <div style={{ ...s.cardTitle, marginBottom: 0 }}>🎯 Metas diarias</div>
@@ -911,9 +987,11 @@ export default function Seguimiento({ perfil }) {
         )}
       </main>
 
-      <button style={s.fab} onClick={() => setFabOpen(!fabOpen)}>{fabOpen ? '×' : '+'}</button>
-
-      {fabOpen && (
+      {/* FAB */}
+      {tab !== 'entreno' && (
+        <button style={s.fab} onClick={() => setFabOpen(!fabOpen)}>{fabOpen ? '×' : '+'}</button>
+      )}
+      {fabOpen && tab !== 'entreno' && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 94 }} onClick={() => setFabOpen(false)} />
           <div style={s.fabMenu}>
@@ -926,25 +1004,90 @@ export default function Seguimiento({ perfil }) {
         </>
       )}
 
+      {/* BOTTOM NAV */}
       <nav style={s.bottomTabs}>
         <button style={s.bottomTab(tab === 'panel')} onClick={() => setTab('panel')}><span style={s.bottomIcon}>📊</span>Panel</button>
         <button style={s.bottomTab(tab === 'diario')} onClick={() => setTab('diario')}><span style={s.bottomIcon}>📔</span>Diario</button>
+        <button style={s.bottomTab(tab === 'entreno')} onClick={() => setTab('entreno')}><span style={s.bottomIcon}>🏋️</span>Entreno</button>
         <button style={s.bottomTab(tab === 'progreso')} onClick={() => setTab('progreso')}><span style={s.bottomIcon}>📈</span>Progreso</button>
         <button style={s.bottomTab(tab === 'mas')} onClick={() => setTab('mas')}><span style={s.bottomIcon}>⋯</span>Más</button>
       </nav>
 
+      {/* MODAL REGISTRAR SERIES */}
+      {ejActual && (
+        <div style={s.porcionModal} onClick={() => setEjActual(null)}>
+          <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
+            <div style={s.porcionHeader}>
+              <div>
+                <div style={s.porcionNombre}>{ejActual.ejercicios_catalogo?.nombre || ejActual.nombre_libre}</div>
+                <div style={s.porcionMarca}>{ejActual.series}×{ejActual.repeticiones} · RIR {ejActual.rir}</div>
+              </div>
+              <button style={s.searchClose} onClick={() => setEjActual(null)}>✕</button>
+            </div>
+
+            {ultimoRegistroEntreno[ejActual.id] && (
+              <div style={{ background: 'rgba(74,222,128,0.05)', border: '1px solid #4ade8030', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#4ade80' }}>
+                💡 Último: {ultimoRegistroEntreno[ejActual.id].reps_hechas} reps × {ultimoRegistroEntreno[ejActual.id].peso_kg}kg (RIR {ultimoRegistroEntreno[ejActual.id].rir})
+              </div>
+            )}
+
+            {seriesEditando.map((serie, idx) => (
+              <div key={idx} style={s.serieCard}>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: '#f5e642', letterSpacing: 1, marginBottom: 10, textAlign: 'center' }}>SERIE {serie.numero_serie}</div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6, textAlign: 'center', fontWeight: 700 }}>Repeticiones</div>
+                  <div style={s.flechasRow}>
+                    <button style={s.flecha} onClick={() => ajustarValor(idx, 'reps', -1)}>◀</button>
+                    <input type="number" style={s.flechaInput} value={serie.reps} onChange={e => actualizarSerie(idx, 'reps', e.target.value)} />
+                    <button style={s.flecha} onClick={() => ajustarValor(idx, 'reps', 1)}>▶</button>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6, textAlign: 'center', fontWeight: 700 }}>Peso (kg)</div>
+                  <div style={s.flechasRow}>
+                    <button style={s.flecha} onClick={() => ajustarValor(idx, 'peso', -2.5)}>◀</button>
+                    <input type="number" step="0.5" style={s.flechaInput} value={serie.peso} onChange={e => actualizarSerie(idx, 'peso', e.target.value)} />
+                    <button style={s.flecha} onClick={() => ajustarValor(idx, 'peso', 2.5)}>▶</button>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6, textAlign: 'center', fontWeight: 700 }}>RIR</div>
+                  <div style={s.flechasRow}>
+                    <button style={s.flecha} onClick={() => ajustarValor(idx, 'rir', -1)}>◀</button>
+                    <input type="number" style={s.flechaInput} value={serie.rir} onChange={e => actualizarSerie(idx, 'rir', e.target.value)} />
+                    <button style={s.flecha} onClick={() => ajustarValor(idx, 'rir', 1)}>▶</button>
+                  </div>
+                </div>
+
+                <input style={{ width: '100%', background: '#0a0a0a', border: '1px solid #222', borderRadius: 8, padding: '10px 14px', color: '#f0f0f0', fontSize: 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginTop: 8 }} placeholder="Notas (opcional)..." value={serie.notas} onChange={e => actualizarSerie(idx, 'notas', e.target.value)} />
+
+                {seriesEditando.length > 1 && (
+                  <button style={{ background: 'rgba(255,77,77,0.1)', color: '#ff4d4d', border: '1px solid rgba(255,77,77,0.2)', borderRadius: 6, padding: '6px 12px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', width: '100%', marginTop: 8 }} onClick={() => eliminarSerie(idx)}>
+                    Eliminar esta serie
+                  </button>
+                )}
+              </div>
+            ))}
+
+            <button style={{ width: '100%', background: 'rgba(245,230,66,0.1)', color: '#f5e642', border: '1px dashed #f5e64240', borderRadius: 8, padding: '12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 14 }} onClick={agregarSerieExtra}>
+              + Agregar otra serie
+            </button>
+
+            <button style={s.btn} onClick={guardarSeries}>💾 Guardar entrenamiento</button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL BUSCAR ALIMENTO */}
       {showSearch && (
         <div style={s.searchModal}>
           <div style={s.searchHeader}>
             <button style={s.searchClose} onClick={() => { setShowSearch(false); setBusqueda(''); setResultados([]) }}>✕</button>
             <input autoFocus style={s.searchInput} value={busqueda} onChange={e => buscarAlimento(e.target.value)} placeholder={`Buscar para ${searchMomento}...`} />
-            <button
-              onClick={() => setShowEscaner(true)}
-              style={s.scanBtn}
-              title="Escanear código de barras"
-            >
-              📷
-            </button>
+            <button onClick={() => setShowEscaner(true)} style={s.scanBtn}>📷</button>
           </div>
           <div style={s.searchTabs}>
             <button style={s.searchTab(searchTab === 'todo')} onClick={() => setSearchTab('todo')}>Todo</button>
@@ -953,8 +1096,7 @@ export default function Seguimiento({ perfil }) {
           <div style={s.searchResults}>
             {buscando && <div style={s.loader}>🔍 Buscando...</div>}
             {!buscando && searchTab === 'todo' && busqueda.length < 2 && <div style={s.empty}>Escribí al menos 2 letras o tocá 📷 para escanear.</div>}
-            {!buscando && searchTab === 'recientes' && recientes.length === 0 && <div style={s.empty}>Todavía no usaste alimentos.<br/>Buscá uno y aparecerán acá.</div>}
-            {!buscando && resultadosVisibles.length === 0 && busqueda.length >= 2 && searchTab === 'todo' && <div style={s.empty}>No se encontraron alimentos.<br/>Probá otro término.</div>}
+            {!buscando && searchTab === 'recientes' && recientes.length === 0 && <div style={s.empty}>Todavía no usaste alimentos.</div>}
             {resultadosVisibles.map(a => (
               <div key={a.id} style={s.resultItem} onClick={() => seleccionarAlimento(a)}>
                 <div style={s.resultImg}>
@@ -965,7 +1107,7 @@ export default function Seguimiento({ perfil }) {
                   <div style={s.resultMeta}>
                     <span style={s.resultBadge(a.fuente)}>{a.fuente === 'local' ? '📦' : a.fuente === 'custom' ? '✏️' : '🌍'}</span>
                     {a.marca && <span style={{ color: '#999' }}>{a.marca} · </span>}
-                    {a.calorias} kcal · {a.proteinas}g P · {a.carbohidratos}g C · {a.grasas}g G (100g)
+                    {a.calorias} kcal · {a.proteinas}g P · {a.carbohidratos}g C · {a.grasas}g G
                   </div>
                 </div>
               </div>
@@ -974,6 +1116,7 @@ export default function Seguimiento({ perfil }) {
         </div>
       )}
 
+      {/* MODAL PORCIÓN */}
       {alimentoSel && (
         <div style={s.porcionModal} onClick={() => { setAlimentoSel(null); setUnidadSel(null); setCantidad(1) }}>
           <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
@@ -992,7 +1135,7 @@ export default function Seguimiento({ perfil }) {
                 <div key={idx} style={s.unidadOption(isSelected)} onClick={() => { setUnidadSel(u); setCantidad(u.esGramos ? 100 : 1) }}>
                   <div style={s.unidadHeader}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                      <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${isSelected ? '#f5e642' : '#444'}`, background: isSelected ? '#f5e642' : 'transparent', flexShrink: 0 }}/>
+                      <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${isSelected ? '#f5e642' : '#444'}`, background: isSelected ? '#f5e642' : 'transparent', flexShrink: 0 }} />
                       <div style={s.unidadNombre}>{u.nombre}</div>
                     </div>
                     {!u.esGramos && <div style={s.unidadGramos}>({u.gramos}g)</div>}
@@ -1013,7 +1156,7 @@ export default function Seguimiento({ perfil }) {
                 <div style={s.cantidadLabel}>{unidadSel.esGramos ? '📏 Gramos' : `Cantidad de "${unidadSel.nombre}"`}</div>
                 <div style={s.cantidadRow}>
                   <button style={s.cantidadArrow} onClick={() => { const c = parseFloat(cantidad) || 0; const min = unidadSel.esGramos ? 5 : 0.5; const step = unidadSel.esGramos ? 5 : 0.5; setCantidad(Math.max(min, c - step)) }}>◀</button>
-                  <input type="number" style={s.cantidadInput} value={cantidad} onChange={e => setCantidad(e.target.value)} step={unidadSel.esGramos ? 5 : 0.5} min={unidadSel.esGramos ? 1 : 0.5} />
+                  <input type="number" style={s.cantidadInput} value={cantidad} onChange={e => setCantidad(e.target.value)} step={unidadSel.esGramos ? 5 : 0.5} />
                   <button style={s.cantidadArrow} onClick={() => { const c = parseFloat(cantidad) || 0; const step = unidadSel.esGramos ? 5 : 0.5; setCantidad(c + step) }}>▶</button>
                 </div>
               </div>
@@ -1038,6 +1181,7 @@ export default function Seguimiento({ perfil }) {
         </div>
       )}
 
+      {/* MODAL PESO */}
       {showPesoModal && (
         <div style={s.porcionModal} onClick={() => setShowPesoModal(false)}>
           <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
@@ -1052,6 +1196,7 @@ export default function Seguimiento({ perfil }) {
         </div>
       )}
 
+      {/* MODAL EJERCICIO */}
       {showEjercicioModal && (
         <div style={s.porcionModal} onClick={() => setShowEjercicioModal(false)}>
           <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
@@ -1073,6 +1218,7 @@ export default function Seguimiento({ perfil }) {
         </div>
       )}
 
+      {/* MODAL METAS */}
       {showMetasModal && (
         <div style={s.porcionModal} onClick={() => setShowMetasModal(false)}>
           <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
@@ -1080,65 +1226,31 @@ export default function Seguimiento({ perfil }) {
               <div style={s.porcionNombre}>🎯 Editar metas diarias</div>
               <button style={s.searchClose} onClick={() => setShowMetasModal(false)}>✕</button>
             </div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 14 }}>Tu coach te puede pasar estos valores.</div>
-
-            {/* 🆕 CALCULADORA DE MACROS */}
-            <button
-              style={{ ...s.btnSm, width: '100%', padding: '12px', marginBottom: 14, fontSize: 13, background: showCalc ? 'rgba(245,230,66,0.15)' : '#1a1a1a' }}
-              onClick={() => setShowCalc(!showCalc)}
-            >
+            <button style={{ background: showCalc ? 'rgba(245,230,66,0.15)' : '#1a1a1a', color: '#f5e642', border: '1px solid #f5e64240', borderRadius: 6, padding: '12px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', width: '100%', fontWeight: 700, marginBottom: 14 }} onClick={() => setShowCalc(!showCalc)}>
               🧮 {showCalc ? 'Ocultar calculadora' : 'Calcular mis macros automáticamente'}
             </button>
-
             {showCalc && (
               <div style={{ background: '#0d0d0d', border: '1px solid #f5e64240', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 12 }}>Completá tus datos y la app calcula tus calorías y macros.</div>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={s.label}>Edad</label>
-                    <input style={s.porcionInput} type="number" value={calcForm.edad} onChange={e => setCalcForm({ ...calcForm, edad: e.target.value })} placeholder="28" />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={s.label}>Sexo</label>
-                    <select style={{ ...s.porcionSelect, width: '100%' }} value={calcForm.sexo} onChange={e => setCalcForm({ ...calcForm, sexo: e.target.value })}>
-                      <option value="hombre">Hombre</option>
-                      <option value="mujer">Mujer</option>
-                    </select>
-                  </div>
+                  <div style={{ flex: 1 }}><label style={s.label}>Edad</label><input style={s.porcionInput} type="number" value={calcForm.edad} onChange={e => setCalcForm({ ...calcForm, edad: e.target.value })} placeholder="28" /></div>
+                  <div style={{ flex: 1 }}><label style={s.label}>Sexo</label><select style={{ ...s.porcionSelect, width: '100%' }} value={calcForm.sexo} onChange={e => setCalcForm({ ...calcForm, sexo: e.target.value })}><option value="hombre">Hombre</option><option value="mujer">Mujer</option></select></div>
                 </div>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={s.label}>Peso (kg)</label>
-                    <input style={s.porcionInput} type="number" value={calcForm.peso} onChange={e => setCalcForm({ ...calcForm, peso: e.target.value })} placeholder="75" />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={s.label}>Altura (cm)</label>
-                    <input style={s.porcionInput} type="number" value={calcForm.altura} onChange={e => setCalcForm({ ...calcForm, altura: e.target.value })} placeholder="175" />
-                  </div>
+                  <div style={{ flex: 1 }}><label style={s.label}>Peso (kg)</label><input style={s.porcionInput} type="number" value={calcForm.peso} onChange={e => setCalcForm({ ...calcForm, peso: e.target.value })} placeholder="75" /></div>
+                  <div style={{ flex: 1 }}><label style={s.label}>Altura (cm)</label><input style={s.porcionInput} type="number" value={calcForm.altura} onChange={e => setCalcForm({ ...calcForm, altura: e.target.value })} placeholder="175" /></div>
                 </div>
                 <label style={s.label}>Actividad</label>
                 <select style={{ ...s.porcionSelect, width: '100%', marginBottom: 12 }} value={calcForm.actividad} onChange={e => setCalcForm({ ...calcForm, actividad: e.target.value })}>
-                  <option value="sedentario">Sedentario (poco o nada)</option>
-                  <option value="ligero">Ligero (1-3 días)</option>
-                  <option value="moderado">Moderado (3-5 días)</option>
-                  <option value="activo">Activo (6-7 días)</option>
-                  <option value="muy_activo">Muy activo (físico + entreno)</option>
+                  <option value="sedentario">Sedentario</option><option value="ligero">Ligero (1-3 días)</option><option value="moderado">Moderado (3-5 días)</option><option value="activo">Activo (6-7 días)</option><option value="muy_activo">Muy activo</option>
                 </select>
                 <label style={s.label}>Objetivo</label>
                 <select style={{ ...s.porcionSelect, width: '100%', marginBottom: 14 }} value={calcForm.objetivo} onChange={e => setCalcForm({ ...calcForm, objetivo: e.target.value })}>
-                  <option value="bajar de peso">Bajar de peso</option>
-                  <option value="tonificar">Tonificar</option>
-                  <option value="mantener">Mantener</option>
-                  <option value="ganar músculo">Ganar músculo</option>
+                  <option value="bajar de peso">Bajar de peso</option><option value="tonificar">Tonificar</option><option value="mantener">Mantener</option><option value="ganar músculo">Ganar músculo</option>
                 </select>
                 <button style={{ ...s.btn, background: '#4ade80' }} onClick={calcularMacrosAuto}>Calcular y completar ↓</button>
-                <div style={{ fontSize: 10, color: '#caa46a', marginTop: 10, lineHeight: 1.5 }}>
-                  ⚠️ Es una estimación. Sostené tus números ~2 semanas y ajustá según tu progreso. Para bajar de grasa no uses déficits agresivos. Ante dudas, consultá a un profesional de la salud.
-                </div>
               </div>
             )}
-
-            <label style={s.label}>🔥 Calorías (kcal)</label>
+            <label style={s.label}>🔥 Calorías</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.calorias} onChange={e => setMetasForm({ ...metasForm, calorias: e.target.value })} placeholder="2000" />
             <label style={s.label}>🥩 Proteínas (g)</label>
             <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={metasForm.proteinas} onChange={e => setMetasForm({ ...metasForm, proteinas: e.target.value })} placeholder="150" />
@@ -1149,40 +1261,34 @@ export default function Seguimiento({ perfil }) {
             {metasForm.calorias && (
               <div style={s.metaCheck(macrosOk)}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ color: '#888' }}>Calorías de tus macros:</span>
+                  <span style={{ color: '#888' }}>Cal de macros:</span>
                   <span style={{ fontWeight: 700, color: macrosOk ? '#4ade80' : '#ff4d4d' }}>{Math.round(calMacros)} kcal</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ color: '#888' }}>Calorías objetivo:</span>
-                  <span style={{ fontWeight: 700, color: '#f5e642' }}>{calObjetivo} kcal</span>
-                </div>
                 <div style={{ color: macrosOk ? '#4ade80' : '#ff4d4d', fontSize: 11, fontWeight: 600 }}>
-                  {macrosOk ? '✅ Los macros cuadran con tus calorías' : `⚠️ Diferencia de ${diff > 0 ? '+' : ''}${diff} kcal`}
+                  {macrosOk ? '✅ Los macros cuadran' : `⚠️ Diferencia de ${diff > 0 ? '+' : ''}${diff} kcal`}
                 </div>
               </div>
             )}
-            <button style={{ ...s.btn, opacity: macrosOk ? 1 : 0.5, cursor: macrosOk ? 'pointer' : 'not-allowed' }} onClick={() => { if (macrosOk) guardarMetas() }}>
+            <button style={{ ...s.btn, opacity: macrosOk ? 1 : 0.5 }} onClick={() => { if (macrosOk) guardarMetas() }}>
               {macrosOk ? 'Guardar metas' : 'Ajustá los macros para guardar'}
             </button>
           </div>
         </div>
       )}
 
-      {/* 🆕 MODAL: cargar un plan de Mi Alimentación al diario */}
+      {/* MODAL CARGAR PLAN ALIMENTACION */}
       {showCargarPlan && (
         <div style={s.porcionModal} onClick={() => setShowCargarPlan(false)}>
           <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
             <div style={s.porcionHeader}>
               <div>
                 <div style={s.porcionNombre}>📋 Cargar un plan</div>
-                <div style={s.porcionMarca}>Se suma al diario del día seleccionado</div>
+                <div style={s.porcionMarca}>Se suma al diario del día</div>
               </div>
               <button style={s.searchClose} onClick={() => setShowCargarPlan(false)}>✕</button>
             </div>
-            {cargandoPlanes ? (
-              <div style={s.loader}>Cargando tus planes...</div>
-            ) : planesDisponibles.length === 0 ? (
-              <div style={s.empty}>Todavía no tenés planes.<br/>Creá uno en "Mi Alimentación".</div>
+            {cargandoPlanes ? <div style={s.loader}>Cargando...</div> : planesDisponibles.length === 0 ? (
+              <div style={s.empty}>No tenés planes. Creá uno en "Mi Alimentación".</div>
             ) : (
               <>
                 {planesDisponibles.map(plan => (
@@ -1195,166 +1301,41 @@ export default function Seguimiento({ perfil }) {
                     <div style={{ color: '#4ade80', fontSize: 22, fontWeight: 700 }}>＋</div>
                   </div>
                 ))}
-                {aplicandoPlan && <div style={s.loader}>Cargando plan al día...</div>}
+                {aplicandoPlan && <div style={s.loader}>Cargando plan...</div>}
               </>
             )}
           </div>
         </div>
       )}
 
-      {/* MODAL: cargar producto custom cuando OFF no tiene datos */}
+      {/* MODAL CUSTOM */}
       {showCustomModal && (
         <div style={s.porcionModal} onClick={() => setShowCustomModal(false)}>
           <div style={s.porcionContent} onClick={e => e.stopPropagation()}>
             <div style={s.porcionHeader}>
-              <div>
-                <div style={s.porcionNombre}>📝 Crear producto</div>
-                <div style={s.porcionMarca}>Cargá los datos del producto escaneado</div>
-              </div>
+              <div><div style={s.porcionNombre}>📝 Crear producto</div><div style={s.porcionMarca}>Valores por 100g</div></div>
               <button style={s.searchClose} onClick={() => setShowCustomModal(false)}>✕</button>
             </div>
-
-            <div style={s.customAlert}>
-              💡 Mirá la etiqueta nutricional del producto. Cargá los valores POR 100g.
-            </div>
-
-            {customForm.codigo_barras && (
-              <div style={{ fontSize: 11, color: '#666', marginBottom: 10 }}>
-                📷 Código: {customForm.codigo_barras}
-              </div>
-            )}
-
-            <label style={s.label}>Nombre del producto *</label>
-            <input
-              style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }}
-              value={customForm.nombre}
-              onChange={e => setCustomForm({ ...customForm, nombre: e.target.value })}
-              placeholder="Ej: Galletitas integrales con chia"
-              autoFocus
-            />
-
+            <div style={s.customAlert}>💡 Mirá la etiqueta nutricional. Cargá los valores POR 100g.</div>
+            <label style={s.label}>Nombre *</label>
+            <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} value={customForm.nombre} onChange={e => setCustomForm({ ...customForm, nombre: e.target.value })} placeholder="Ej: Galletitas integrales" autoFocus />
             <label style={s.label}>Marca</label>
-            <input
-              style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }}
-              value={customForm.marca}
-              onChange={e => setCustomForm({ ...customForm, marca: e.target.value })}
-              placeholder="Ej: Granix"
-            />
-
-            <label style={s.label}>🔥 Calorías (por 100g) *</label>
-            <input
-              style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }}
-              type="number"
-              value={customForm.calorias}
-              onChange={e => setCustomForm({ ...customForm, calorias: e.target.value })}
-              placeholder="450"
-            />
-
+            <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} value={customForm.marca} onChange={e => setCustomForm({ ...customForm, marca: e.target.value })} placeholder="Ej: Granix" />
+            <label style={s.label}>🔥 Calorías *</label>
+            <input style={{ ...s.porcionInput, width: '100%', marginBottom: 14 }} type="number" value={customForm.calorias} onChange={e => setCustomForm({ ...customForm, calorias: e.target.value })} placeholder="450" />
             <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-              <div style={{ flex: 1 }}>
-                <label style={s.label}>🥩 Proteínas (g)</label>
-                <input
-                  style={s.porcionInput}
-                  type="number"
-                  step="0.1"
-                  value={customForm.proteinas}
-                  onChange={e => setCustomForm({ ...customForm, proteinas: e.target.value })}
-                  placeholder="10"
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={s.label}>🍚 Carbos (g)</label>
-                <input
-                  style={s.porcionInput}
-                  type="number"
-                  step="0.1"
-                  value={customForm.carbohidratos}
-                  onChange={e => setCustomForm({ ...customForm, carbohidratos: e.target.value })}
-                  placeholder="60"
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={s.label}>🥑 Grasas (g)</label>
-                <input
-                  style={s.porcionInput}
-                  type="number"
-                  step="0.1"
-                  value={customForm.grasas}
-                  onChange={e => setCustomForm({ ...customForm, grasas: e.target.value })}
-                  placeholder="15"
-                />
-              </div>
+              <div style={{ flex: 1 }}><label style={s.label}>Proteínas</label><input style={s.porcionInput} type="number" step="0.1" value={customForm.proteinas} onChange={e => setCustomForm({ ...customForm, proteinas: e.target.value })} placeholder="10" /></div>
+              <div style={{ flex: 1 }}><label style={s.label}>Carbos</label><input style={s.porcionInput} type="number" step="0.1" value={customForm.carbohidratos} onChange={e => setCustomForm({ ...customForm, carbohidratos: e.target.value })} placeholder="60" /></div>
+              <div style={{ flex: 1 }}><label style={s.label}>Grasas</label><input style={s.porcionInput} type="number" step="0.1" value={customForm.grasas} onChange={e => setCustomForm({ ...customForm, grasas: e.target.value })} placeholder="15" /></div>
             </div>
-
-            {/* UNIDADES OPCIONALES */}
-            <div style={{ background: '#0d0d0d', border: '1px solid #222', borderRadius: 10, padding: 14, marginBottom: 14 }}>
-              <label style={{ ...s.label, marginBottom: 10 }}>📏 Unidades opcionales</label>
-              <div style={{ fontSize: 11, color: '#666', marginBottom: 12 }}>
-                Cargá unidades como "1 huevo", "1 paquete", "1 lata" con su peso en gramos. Si dejás vacío, solo se podrá agregar por gramos.
-              </div>
-
-              {(customForm.unidades || []).map((u, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                  <input
-                    style={{ ...s.porcionInput, flex: 2, fontSize: 13 }}
-                    placeholder="Nombre (ej: 1 huevo)"
-                    value={u.nombre || ''}
-                    onChange={e => {
-                      const nuevas = [...customForm.unidades]
-                      nuevas[idx] = { ...nuevas[idx], nombre: e.target.value }
-                      setCustomForm({ ...customForm, unidades: nuevas })
-                    }}
-                  />
-                  <input
-                    style={{ ...s.porcionInput, width: 80, fontSize: 13, textAlign: 'center' }}
-                    type="number"
-                    placeholder="60"
-                    value={u.gramos || ''}
-                    onChange={e => {
-                      const nuevas = [...customForm.unidades]
-                      nuevas[idx] = { ...nuevas[idx], gramos: e.target.value }
-                      setCustomForm({ ...customForm, unidades: nuevas })
-                    }}
-                  />
-                  <span style={{ fontSize: 11, color: '#666' }}>g</span>
-                  <button
-                    style={{ ...s.btnDanger, padding: '6px 10px', fontSize: 14 }}
-                    onClick={() => {
-                      const nuevas = customForm.unidades.filter((_, i) => i !== idx)
-                      setCustomForm({ ...customForm, unidades: nuevas })
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-
-              <button
-                style={{ background: 'rgba(245,230,66,0.1)', color: '#f5e642', border: '1px dashed #f5e64240', borderRadius: 6, padding: '10px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', width: '100%', fontWeight: 700 }}
-                onClick={() => {
-                  setCustomForm({
-                    ...customForm,
-                    unidades: [...(customForm.unidades || []), { nombre: '', gramos: '' }]
-                  })
-                }}
-              >
-                + Agregar unidad
-              </button>
-            </div>
-
-            <button style={s.btn} onClick={guardarCustom}>
-              ✅ Guardar y agregar al diario
-            </button>
+            <button style={s.btn} onClick={guardarCustom}>✅ Guardar y agregar</button>
           </div>
         </div>
       )}
 
-      {showEscaner && (
-        <EscanerBarras
-          onScan={onScanBarcode}
-          onClose={() => setShowEscaner(false)}
-        />
-      )}
+      {showEscaner && <EscanerBarras onScan={onScanBarcode} onClose={() => setShowEscaner(false)} />}
+
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap');`}</style>
     </div>
   )
 }
